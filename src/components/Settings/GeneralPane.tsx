@@ -210,6 +210,15 @@ export function GeneralPane() {
         />
       </Section>
 
+      <Section title={t('settings.recordingSounds')}>
+        <Toggle
+          checked={config.recording_sounds_enabled ?? true}
+          onChange={(enabled) => updateConfig({ recording_sounds_enabled: enabled })}
+          label={t('settings.recordingSounds')}
+        />
+        <p className="mt-2 text-[11px] text-text-tertiary">{t('settings.recordingSoundsHint')}</p>
+      </Section>
+
       <Section title={t('settings.outputMode')}>
         <SegmentedControl
           options={[

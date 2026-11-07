@@ -269,6 +269,9 @@ export function DictionaryPane() {
 
   return (
     <div className="space-y-5">
+      <p className="rounded-[8px] border border-border bg-bg-secondary px-3 py-2 text-[11px] leading-relaxed text-text-secondary">
+        {t('dictionary.bundledHint')}
+      </p>
       <div className="flex min-w-0 items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <Search

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::Sample;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, oneshot};
 
@@ -63,6 +64,7 @@ pub struct AudioConfig {
     pub sample_rate: u32,
     pub channels: u16,
     pub chunk_duration_ms: u32,
+    pub recording_sounds_enabled: bool,
 }
 
 impl Default for AudioConfig {
@@ -71,6 +73,7 @@ impl Default for AudioConfig {
             sample_rate: 16000,
             channels: 1,
             chunk_duration_ms: 20,
+            recording_sounds_enabled: false,
         }
     }
 }
@@ -92,6 +95,7 @@ pub struct AudioCaptureHandle {
     startup_waiter: Option<CaptureStartupWaiter>,
     volume: Arc<Mutex<f32>>,
     state: Arc<Mutex<CaptureState>>,
+    capturing: Arc<AtomicBool>,
 }
 
 impl AudioCaptureHandle {
@@ -99,6 +103,8 @@ impl AudioCaptureHandle {
     pub fn start(config: AudioConfig) -> Result<(Self, mpsc::Receiver<Vec<u8>>)> {
         let (audio_tx, audio_rx) = mpsc::channel::<Vec<u8>>(audio_channel_capacity(&config));
         let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
+        let capturing = Arc::new(AtomicBool::new(false));
+        let capture_gate = capturing.clone();
         let volume = Arc::new(Mutex::new(0.0f32));
         let state = Arc::new(Mutex::new(initial_capture_state()));
         let (mut startup_notifier, startup_waiter) = capture_startup_channel();
@@ -116,6 +122,7 @@ impl AudioCaptureHandle {
                 vol_clone,
                 state_clone,
                 &mut startup_notifier,
+                capture_gate,
             ) {
                 *failed_state
                     .lock()
@@ -131,6 +138,7 @@ impl AudioCaptureHandle {
                 startup_waiter: Some(startup_waiter),
                 volume,
                 state,
+                capturing,
             },
             audio_rx,
         ))
@@ -148,7 +156,8 @@ impl AudioCaptureHandle {
     }
 
     pub fn stop(&mut self) {
-        // Signal the capture thread to stop
+        // Gate input immediately, then signal the platform thread to stop.
+        self.capturing.store(false, Ordering::SeqCst);
         self.stop_tx = None;
         *self.volume.lock().unwrap_or_else(|e| e.into_inner()) = 0.0;
         *self.state.lock().unwrap_or_else(|e| e.into_inner()) = CaptureState::Idle;
@@ -214,6 +223,7 @@ struct InputProcessingContext {
     sender: mpsc::Sender<Vec<u8>>,
     volume: Arc<Mutex<f32>>,
     buffer: Arc<Mutex<Vec<i16>>>,
+    capturing: Arc<AtomicBool>,
 }
 
 fn normalized_rms(data: &[f32]) -> f32 {
@@ -230,6 +240,9 @@ fn normalized_rms(data: &[f32]) -> f32 {
 }
 
 fn process_input_samples(data: &[f32], context: &InputProcessingContext) {
+    if !context.capturing.load(Ordering::SeqCst) {
+        return;
+    }
     // Calculate RMS volume from raw data
     if let Ok(mut volume) = context.volume.lock() {
         *volume = normalized_rms(data);
@@ -298,6 +311,7 @@ where
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_capture(
     config: AudioConfig,
     sender: mpsc::Sender<Vec<u8>>,
@@ -305,6 +319,7 @@ fn run_capture(
     volume: Arc<Mutex<f32>>,
     state: Arc<Mutex<CaptureState>>,
     startup_notifier: &mut CaptureStartupNotifier,
+    capturing: Arc<AtomicBool>,
 ) -> Result<()> {
     let host = cpal::default_host();
     let device = host
@@ -350,6 +365,7 @@ fn run_capture(
         sender,
         volume,
         buffer,
+        capturing: capturing.clone(),
     };
 
     let stream = match device_sample_format {
@@ -402,6 +418,20 @@ fn run_capture(
     }?;
 
     stream.play()?;
+    if config.recording_sounds_enabled {
+        super::cues::play(super::cues::RecordingCue::Start);
+        std::thread::sleep(std::time::Duration::from_millis(35));
+    }
+    if !matches!(
+        stop_rx.try_recv(),
+        Err(std::sync::mpsc::TryRecvError::Empty)
+    ) {
+        drop(stream);
+        return Err(anyhow::anyhow!(
+            "Recording was cancelled before capture readiness"
+        ));
+    }
+    capturing.store(true, Ordering::SeqCst);
     let capture_ready_at = crate::recording_deadline::CaptureReadyAt::now();
     *state.lock().unwrap_or_else(|e| e.into_inner()) = CaptureState::Recording;
     startup_notifier.ready(capture_ready_at);
@@ -416,9 +446,13 @@ fn run_capture(
     // Block until stop signal (sender dropped)
     let _ = stop_rx.recv();
 
-    // Stream is dropped here, stopping capture
+    // Stop capture before playing the end cue so it cannot reach STT.
+    capturing.store(false, Ordering::SeqCst);
     drop(stream);
     *state.lock().unwrap_or_else(|e| e.into_inner()) = CaptureState::Idle;
+    if config.recording_sounds_enabled {
+        super::cues::play(super::cues::RecordingCue::Stop);
+    }
     tracing::info!("Audio capture stopped");
     Ok(())
 }
@@ -427,6 +461,32 @@ fn run_capture(
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn gated_capture_does_not_buffer_the_start_cue_or_samples_after_stop() {
+        let (sender, mut receiver) = mpsc::channel(4);
+        let capturing = Arc::new(AtomicBool::new(false));
+        let context = InputProcessingContext {
+            device_sample_rate: 16000,
+            device_channels: 1,
+            target_rate: 16000,
+            target_channels: 1,
+            samples_per_chunk: 2,
+            sender,
+            volume: Arc::new(Mutex::new(0.0)),
+            buffer: Arc::new(Mutex::new(Vec::new())),
+            capturing: capturing.clone(),
+        };
+        process_input_samples(&[0.5, 0.5], &context);
+        assert!(receiver.try_recv().is_err());
+        assert!(context.buffer.lock().unwrap().is_empty());
+        capturing.store(true, Ordering::SeqCst);
+        process_input_samples(&[0.2, 0.2], &context);
+        assert!(receiver.try_recv().is_ok());
+        capturing.store(false, Ordering::SeqCst);
+        process_input_samples(&[0.5, 0.5], &context);
+        assert!(receiver.try_recv().is_err());
+    }
 
     #[test]
     fn capture_does_not_report_recording_before_the_backend_is_ready() {

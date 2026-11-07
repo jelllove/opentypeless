@@ -4,15 +4,19 @@
 
 ```mermaid
 flowchart LR
-    Key[Right Alt toggle on Windows] --> Capture[Record mono PCM]
+    Key[Right Alt toggle on Windows] --> StartCue[Opening chime with input gated]
+    StartCue --> Capture[Record mono PCM]
     Capture --> Meter[Live microphone loudness envelope]
     Capture --> Stop[Second press stops recording]
+    Stop --> EndCue[Closing chime after input closes]
     Stop --> Speech[Azure Speech fast transcription]
     Speech --> Raw[Display transcript]
     Raw --> Polish{AI processing enabled?}
     Polish -->|No| Output[Active app or clipboard]
     Polish -->|Yes| Protocol[Select Chat Completions or Responses from URL]
     Protocol --> Model[Azure OpenAI or Foundry deployment]
+    Dictionary[One-time seeded bundled and custom spellings] --> Relevant[At most 64 relevant spellings]
+    Relevant --> Model
     Model --> Completed[Validate completed response]
     Completed --> Output
     Output --> Target{Editable target and output success?}

@@ -279,6 +279,8 @@
     }
   },
   "settings": {
+    "recordingSounds": "録音通知音",
+    "recordingSoundsHint": "録音開始・終了時に短い音を再生します。初期設定はオン。ネット接続や有料サービスは不要です。",
     "azureSpeechEndpoint": "Azure Speech エンドポイント",
     "azureSpeechHint": "高速文字起こし対応リージョンの Speech リソースの HTTPS エンドポイントとキーを指定します。録音停止後に文字起こしします。テストでは短い無音を送信します。",
     "azureDeploymentName": "Azure デプロイ名",
@@ -499,6 +501,7 @@
     "general": "一般"
   },
   "dictionary": {
+    "bundledHint": "中国語の常用語とソフトウェア用語 2,967 件を内蔵しています。ダウンロード不要。既存の用語を保持し、削除した初期用語は復元しません。",
     "word": "単語",
     "pronunciation": "発音",
     "pronunciationOptional": "発音（任意）",

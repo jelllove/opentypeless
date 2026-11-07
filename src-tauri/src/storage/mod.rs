@@ -359,6 +359,7 @@ pub struct AppConfig {
     pub hotkey: String,
     pub ask_hotkey: String,
     pub hotkey_mode: String,
+    pub recording_sounds_enabled: bool,
     pub hotkeys: HotkeyConfig,
     pub output_mode: String,
     pub insertion_strategy: String,
@@ -417,6 +418,7 @@ impl Default for AppConfig {
             hotkey: default_dictation_hotkey().to_string(),
             ask_hotkey: default_ask_hotkey().to_string(),
             hotkey_mode: default_dictation_hotkey_mode().to_string(),
+            recording_sounds_enabled: true,
             hotkeys: HotkeyConfig::default(),
             output_mode: "keyboard".to_string(),
             insertion_strategy: "auto".to_string(),
@@ -1886,6 +1888,46 @@ impl DictionaryStore {
         Ok(Self {
             conn: Mutex::new(conn),
         })
+    }
+
+    pub fn seed_bundled_defaults(&self) -> Result<usize> {
+        let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+        let transaction = conn.transaction()?;
+        transaction.execute_batch(
+            "CREATE TABLE IF NOT EXISTS dictionary_seed_versions (id TEXT PRIMARY KEY NOT NULL);",
+        )?;
+        let seeded: bool = transaction.query_row(
+            "SELECT EXISTS(SELECT 1 FROM dictionary_seed_versions WHERE id=?1)",
+            [crate::bundled_dictionary::SEED_ID],
+            |row| row.get(0),
+        )?;
+        if seeded {
+            return Ok(0);
+        }
+        let mut seen = std::collections::HashSet::new();
+        {
+            let mut statement = transaction.prepare("SELECT word FROM dictionary")?;
+            for word in statement.query_map([], |row| row.get::<_, String>(0))? {
+                seen.insert(normalized_dictionary_identity(&word?));
+            }
+        }
+        let mut inserted = 0;
+        for word in crate::bundled_dictionary::terms() {
+            let word = validate_dictionary_text(word, 100, "dictionary_word")?;
+            if seen.insert(normalized_dictionary_identity(&word)) {
+                transaction.execute(
+                    "INSERT INTO dictionary (word, pronunciation) VALUES (?1, NULL)",
+                    [&word],
+                )?;
+                inserted += 1;
+            }
+        }
+        transaction.execute(
+            "INSERT INTO dictionary_seed_versions (id) VALUES (?1)",
+            [crate::bundled_dictionary::SEED_ID],
+        )?;
+        transaction.commit()?;
+        Ok(inserted)
     }
 
     pub async fn add(&self, word: &str, pronunciation: Option<&str>) -> Result<()> {
@@ -3680,6 +3722,47 @@ mod tests {
             )
             .unwrap();
         assert_eq!(raw_values, (String::new(), String::new()));
+    }
+
+    #[test]
+    fn recording_sound_preference_defaults_on_and_preserves_explicit_off() {
+        assert!(AppConfig::default().recording_sounds_enabled);
+        assert!(
+            AppConfig::from_stored_value(serde_json::json!({}))
+                .unwrap()
+                .recording_sounds_enabled
+        );
+        assert!(
+            !AppConfig::from_stored_value(serde_json::json!({"recording_sounds_enabled": false}))
+                .unwrap()
+                .recording_sounds_enabled
+        );
+    }
+
+    #[tokio::test]
+    async fn bundled_seed_preserves_custom_entries_and_deleted_defaults() {
+        let store = temp_dictionary_store("bundled-seed");
+        store
+            .add("Azure OpenAI", Some("my pronunciation"))
+            .await
+            .unwrap();
+        let count = store.seed_bundled_defaults().unwrap();
+        assert!(count > 2500);
+        let entries = store.list().await.unwrap();
+        let existing = entries
+            .iter()
+            .find(|entry| entry.word == "Azure OpenAI")
+            .unwrap();
+        assert_eq!(existing.pronunciation.as_deref(), Some("my pronunciation"));
+        let api = entries.iter().find(|entry| entry.word == "API").unwrap();
+        store.remove(api.id).await.unwrap();
+        assert_eq!(store.seed_bundled_defaults().unwrap(), 0);
+        assert!(!store
+            .list()
+            .await
+            .unwrap()
+            .iter()
+            .any(|entry| entry.word == "API"));
     }
 
     #[tokio::test]

@@ -1,0 +1,22 @@
+{
+  "pack": "starter-v1",
+  "termCount": 2967,
+  "chineseSelectionLimit": 2400,
+  "sources": [
+    {
+      "repository": "https://github.com/fxsjy/jieba",
+      "revision": "67fa2e36e72f69d9134b8a1037b83fbb070b9775",
+      "file": "jieba/dict.txt",
+      "sha256": "7197c3211ddd98962b036cdf40324d1ea2bfaa12bd028e68faa70111a88e12a8",
+      "license": "MIT"
+    },
+    {
+      "repository": "https://github.com/wuyichen24/software-engineering-abbreviations-acronyms",
+      "revision": "8e1d77e99b184106d50a180ba52cb3557273af6d",
+      "file": "README.md",
+      "sha256": "2224560d8ec20fa74d312d0c1e37f5b6ee7be74da93fcef48b29f8cc1f905bb3",
+      "license": "CC0-1.0"
+    }
+  ],
+  "originalTermCount": 23
+}

@@ -46,14 +46,20 @@
   <strong>Dictate anywhere</strong> · <strong>Rewrite selected text</strong> · <strong>Ask one-shot voice questions</strong> · <strong>Bring your own keys or use managed cloud words</strong>
 </p>
 
-## What's New in This Fork (v1.2.0)
+## What's New in This Fork (v1.3.0)
+
+- Bundled 2,967-term Chinese/common and software vocabulary, with no separate download.
+- Default-on recording start/stop chimes, configurable in General.
+- Azure Speech transient-failure recovery with at most two retries using the same recording. Permanent configuration/key errors do not retry; a lost response can cause duplicate provider usage.
+
+### Also included from v1.2.0
 
 - Right Alt toggle recording on Windows with persistent custom bindings.
 - Azure Speech transcription and Azure OpenAI / Foundry text cleanup through Chat Completions or Responses.
 - Smooth centered microphone waveform and copy-ready results when insertion is unavailable.
 - Azure connection-test HTTP 400 fix and byte-safe Responses streaming.
 
-See [CHANGELOG.md](CHANGELOG.md) and the [fork release](https://github.com/jelllove/opentypeless/releases/tag/v1.2.0).
+See [CHANGELOG.md](CHANGELOG.md) and the [fork release](https://github.com/jelllove/opentypeless/releases/tag/v1.3.0).
 
 ## Upstream Highlights in v1.1.55
 
@@ -174,7 +180,7 @@ Most desktop dictation tools stop at transcription. OpenTypeless adds the AI rew
 
 | Area              | Highlights                                                                                                                                  |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Voice capture     | Native Fn / Right Alt hotkeys on macOS/Windows, Linux Ctrl defaults, multiple bindings per workflow, hold or toggle mode, smooth centered microphone waveform with flat silence, floating capsule states, idle auto-hide |
+| Voice capture     | Native Fn / Right Alt hotkeys on macOS/Windows, Linux Ctrl defaults, multiple bindings per workflow, hold or toggle mode, configurable start/stop chimes, smooth centered microphone waveform with flat silence, floating capsule states, idle auto-hide |
 | AI rewriting      | App-aware writing, local per-app style mappings, polish styles, streaming polish, selected-text context, and custom instructions             |
 | Ask Anything      | One-shot voice question flow: record in the capsule, think, then show a small answer note with copy support                                 |
 | Voice actions     | Deterministic English, Simplified Chinese, and Traditional Chinese routing for editing, translation, Ask, and supported actions              |
@@ -182,7 +188,7 @@ Most desktop dictation tools stop at transcription. OpenTypeless adds the AI rew
 | LLM providers     | Azure OpenAI GPT deployments, Microsoft Foundry Chat Completions / Responses deployments, Cloud LLM, OpenAI, DeepSeek, Claude, Google Gemini, Groq, Qwen, Moonshot, Ollama, and more |
 | Output            | Keyboard simulation, clipboard paste/copy-only, Windows SendInput, clipboard restore, copy-ready capsule when input is unavailable, and output-failure diagnostics                       |
 | Language          | Auto-detect speech, dedicated translation shortcut, switchable target languages, and 20+ translation targets                                |
-| Dictionary        | Custom terms, import/export, and local correction rules for recurring transcription mistakes                                                 |
+| Dictionary        | Bundled 2,967-term Chinese/common and software starter vocabulary, custom terms, import/export, and local correction rules for recurring transcription mistakes                                                 |
 | Scenes            | Built-in scenes, local custom scenes, active scene metadata, import/export for reusable writing styles                                      |
 | Privacy           | Local app detection and mappings, provider keys in the OS credential vault where available, plus BYOK and local/self-hosted paths            |
 | Account and quota | Optional Pro and Lifetime Starter plans with shared cloud words for voice and AI                                                            |
@@ -329,6 +335,12 @@ All settings are accessible from the in-app Settings panel:
 - **Account / Upgrade** — sign in, check cloud words, manage Pro or Lifetime Starter access
 
 API keys are stored locally in the OS credential vault where available, with a local fallback for unsupported environments. No BYOK keys are sent to OpenTypeless servers — STT/LLM requests go directly to the provider you configure.
+
+### Included vocabulary and recording sounds
+
+A licensed **2,967-term Chinese/common and software vocabulary** is included in the installer: no separate download or import is required. Existing custom terms are kept; deleted defaults stay deleted. The vocabulary supplies spelling hints to AI cleanup, not dictionary definitions or Azure Speech phrase-list adaptation. Only up to 64 relevant spellings are sent per cleanup request. Sources and licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Short **start/stop chimes** are enabled by default. Turn them off in General → Recording sounds. They follow actual microphone capture start/stop, work with dictation and Ask, and do not require a paid service. Right Alt remains press-to-start/press-to-stop unless hold mode is selected.
 
 ### Right Alt and Azure setup
 

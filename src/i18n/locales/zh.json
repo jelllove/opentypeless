@@ -280,6 +280,8 @@
     }
   },
   "settings": {
+    "recordingSounds": "录音提示音",
+    "recordingSoundsHint": "录音开始和结束时播放短提示音，默认开启，无需网络或付费服务。",
     "azureSpeechEndpoint": "Azure Speech 终结点",
     "azureSpeechHint": "填写支持快速转录区域中的 Speech 资源 HTTPS 终结点及对应密钥。停止录音后转成文字；测试会发送一小段静音。",
     "azureDeploymentName": "Azure 模型部署名称",
@@ -499,6 +501,7 @@
     "general": "通用"
   },
   "dictionary": {
+    "bundledHint": "已内置 2,967 个中文常用词和软件术语，无需下载。保留已有自定义词条，删除的默认词条不会再次恢复。",
     "word": "词语",
     "pronunciation": "发音",
     "pronunciationOptional": "发音（可选）",

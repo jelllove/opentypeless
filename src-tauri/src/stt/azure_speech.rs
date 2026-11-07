@@ -7,7 +7,9 @@ use crate::error::AppError;
 
 pub const PROVIDER: &str = "azure-speech";
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
-pub const FINALIZE_TIMEOUT: Duration = Duration::from_secs(135);
+// Three upload/read budgets + 1s/2s backoff + 15s finalization margin.
+pub const FINALIZE_TIMEOUT: Duration = Duration::from_secs(378);
+const MAX_RETRIES: u32 = 2;
 const MAX_AUDIO_BYTES: usize = super::capabilities::CLIENT_FILE_BUFFER_BYTES as usize;
 const API_VERSION: &str = "2025-10-15";
 
@@ -154,46 +156,85 @@ impl SttProvider for AzureSpeechProvider {
             return Ok(None);
         }
         let pcm = std::mem::take(&mut self.audio);
-        let audio = reqwest::multipart::Part::bytes(WhisperCompatProvider::build_wav(
-            &pcm,
-            config.sample_rate,
-        ))
-        .file_name("audio.wav")
-        .mime_str("audio/wav")
-        .map_err(AppError::from)?;
-        let form = reqwest::multipart::Form::new().part("audio", audio).text(
-            "definition",
-            definition(config.language.as_deref())?.to_string(),
-        );
-        let response = self
-            .client
-            .post(&self.endpoint)
-            .header("Ocp-Apim-Subscription-Key", config.api_key.trim())
-            .multipart(form)
-            .timeout(REQUEST_TIMEOUT)
-            .send()
-            .await
-            .map_err(|e| {
-                if e.is_timeout() {
-                    AppError::Timeout(REQUEST_TIMEOUT)
-                } else {
-                    e.into()
+        let wav = WhisperCompatProvider::build_wav(&pcm, config.sample_rate);
+        let definition = definition(config.language.as_deref())?.to_string();
+        for attempt in 0..=MAX_RETRIES {
+            let result = upload_once(
+                &self.client,
+                &self.endpoint,
+                config.api_key.trim(),
+                &wav,
+                &definition,
+            )
+            .await;
+            match result {
+                Err(error) if error.is_retryable() && attempt < MAX_RETRIES => {
+                    tracing::warn!(
+                        "Azure Speech transient upload failure; retry {}/{}",
+                        attempt + 1,
+                        MAX_RETRIES
+                    );
+                    tokio::time::sleep(Duration::from_secs(u64::from(attempt + 1))).await;
                 }
-            })?;
-        let status = response.status();
-        if !status.is_success() {
-            let body: String = response.text().await?.chars().take(300).collect();
-            return Err(AppError::Api {
-                status: status.as_u16(),
-                body,
-            });
+                result => return result,
+            }
         }
-        transcript(&response.json::<Value>().await?)
+        unreachable!("bounded retry loop always returns")
     }
 
     fn name(&self) -> &str {
         "Azure Speech"
     }
+}
+
+fn upload_error(error: reqwest::Error) -> AppError {
+    if error.is_timeout() {
+        AppError::Timeout(REQUEST_TIMEOUT)
+    } else if error.is_decode() || error.is_builder() {
+        AppError::Config(
+            "Azure Speech returned an invalid response or request configuration".into(),
+        )
+    } else {
+        error.into()
+    }
+}
+
+async fn upload_once(
+    client: &reqwest::Client,
+    endpoint: &str,
+    key: &str,
+    wav: &[u8],
+    definition: &str,
+) -> Result<Option<String>, AppError> {
+    let audio = reqwest::multipart::Part::bytes(wav.to_vec())
+        .file_name("audio.wav")
+        .mime_str("audio/wav")
+        .map_err(upload_error)?;
+    let form = reqwest::multipart::Form::new()
+        .part("audio", audio)
+        .text("definition", definition.to_string());
+    let response = client
+        .post(endpoint)
+        .header("Ocp-Apim-Subscription-Key", key)
+        .multipart(form)
+        .timeout(REQUEST_TIMEOUT)
+        .send()
+        .await
+        .map_err(upload_error)?;
+    let status = response.status();
+    if !status.is_success() {
+        // Preserve a permanent HTTP status even if reading its error body fails.
+        let body = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "Azure Speech error response body was unavailable".into());
+        return Err(AppError::Api {
+            status: status.as_u16(),
+            body: body.chars().take(300).collect(),
+        });
+    }
+    let body: Value = response.json().await.map_err(upload_error)?;
+    transcript(&body)
 }
 
 #[cfg(test)]
@@ -260,6 +301,176 @@ mod tests {
         assert_eq!(provider.disconnect().await.unwrap(), None);
         config.api_key.clear();
         assert!(provider.connect(&config).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn azure_upload_retries_twice_with_identical_pcm_and_never_retries_permanent_errors() {
+        use std::io::{Read, Write};
+        for (statuses, expected_calls, success) in [
+            (vec![503, 502, 200], 3, true),
+            (vec![0, 0, 200], 3, true),
+            (vec![503, 503, 503], 3, false),
+            (vec![201], 1, false),
+            (vec![400], 1, false),
+            (vec![401], 1, false),
+            (vec![429], 1, false),
+        ] {
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            listener.set_nonblocking(true).unwrap();
+            let address = listener.local_addr().unwrap();
+            let worker = std::thread::spawn(move || {
+                let mut calls = 0;
+                let deadline = std::time::Instant::now() + Duration::from_secs(10);
+                for status in statuses {
+                    let mut socket = loop {
+                        match listener.accept() {
+                            Ok((socket, _)) => break socket,
+                            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                                if std::time::Instant::now() > deadline {
+                                    return calls;
+                                }
+                                std::thread::sleep(Duration::from_millis(5));
+                            }
+                            Err(error) => panic!("{error}"),
+                        }
+                    };
+                    socket.set_nonblocking(false).unwrap();
+                    socket
+                        .set_read_timeout(Some(Duration::from_secs(5)))
+                        .unwrap();
+                    let mut request = Vec::new();
+                    loop {
+                        let mut chunk = [0; 4096];
+                        let count = socket.read(&mut chunk).unwrap();
+                        assert!(count > 0);
+                        request.extend_from_slice(&chunk[..count]);
+                        if let Some(end) = request.windows(4).position(|s| s == b"\r\n\r\n") {
+                            let headers = String::from_utf8_lossy(&request[..end]).to_lowercase();
+                            let length: usize = headers
+                                .lines()
+                                .find_map(|line| line.strip_prefix("content-length: "))
+                                .unwrap()
+                                .parse()
+                                .unwrap();
+                            if request.len() >= end + 4 + length {
+                                break;
+                            }
+                        }
+                    }
+                    let wav = WhisperCompatProvider::build_wav(&[17; 3200], 16000);
+                    assert!(request.windows(wav.len()).any(|bytes| bytes == wav));
+                    assert!(String::from_utf8_lossy(&request).contains("zh-CN"));
+                    calls += 1;
+                    if status == 0 {
+                        drop(socket);
+                        continue;
+                    }
+                    let body = if status == 200 {
+                        r#"{"combinedPhrases":[{"text":"Recovered text."}]}"#
+                    } else if status == 201 {
+                        "not-json"
+                    } else {
+                        r#"{"error":{"message":"temporary or permanent test error"}}"#
+                    };
+                    write!(socket, "HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+                }
+                calls
+            });
+            let mut provider = AzureSpeechProvider::with_client(
+                reqwest::Client::builder().no_proxy().build().unwrap(),
+            );
+            provider
+                .connect(&SttConfig {
+                    api_key: "test-key".into(),
+                    language: Some("zh".into()),
+                    provider_endpoint: Some(format!("http://{address}")),
+                    ..Default::default()
+                })
+                .await
+                .unwrap();
+            provider.send_audio(&[17; 3200]).await.unwrap();
+            let result = provider.disconnect().await;
+            if success {
+                assert_eq!(result.unwrap(), Some("Recovered text.".into()));
+            } else {
+                assert!(result.is_err());
+            }
+            assert_eq!(worker.join().unwrap(), expected_calls);
+        }
+    }
+
+    #[tokio::test]
+    async fn cancelling_upload_backoff_prevents_further_attempts() {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let (responded_tx, responded_rx) = tokio::sync::oneshot::channel();
+        let worker = std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            let mut request = Vec::new();
+            loop {
+                let mut chunk = [0; 4096];
+                let n = socket.read(&mut chunk).unwrap();
+                assert!(n > 0);
+                request.extend_from_slice(&chunk[..n]);
+                if let Some(end) = request.windows(4).position(|s| s == b"\r\n\r\n") {
+                    let headers = String::from_utf8_lossy(&request[..end]).to_lowercase();
+                    let length: usize = headers
+                        .lines()
+                        .find_map(|line| line.strip_prefix("content-length: "))
+                        .unwrap()
+                        .parse()
+                        .unwrap();
+                    if request.len() >= end + 4 + length {
+                        break;
+                    }
+                }
+            }
+            socket
+                .write_all(b"HTTP/1.1 503 Test\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+                .unwrap();
+            drop(socket);
+            responded_tx.send(()).unwrap();
+            listener.set_nonblocking(true).unwrap();
+            let deadline = std::time::Instant::now() + Duration::from_millis(1300);
+            while std::time::Instant::now() < deadline {
+                assert!(
+                    listener.accept().is_err(),
+                    "Cancelled upload made another request"
+                );
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        });
+        let mut provider = AzureSpeechProvider::with_client(
+            reqwest::Client::builder().no_proxy().build().unwrap(),
+        );
+        provider
+            .connect(&SttConfig {
+                api_key: "key".into(),
+                provider_endpoint: Some(format!("http://{address}")),
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        provider.send_audio(&[0; 3200]).await.unwrap();
+        let cancellation = crate::stt_finalize::SttCancellation::default();
+        let trigger = cancellation.clone();
+        let upload = tokio::spawn(async move {
+            tokio::select! { _ = cancellation.cancelled() => None, result = provider.disconnect() => Some(result) }
+        });
+        responded_rx.await.unwrap();
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        trigger.cancel();
+        assert!(upload.await.unwrap().is_none());
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn azure_finalization_covers_all_attempts_and_backoff() {
+        assert!(FINALIZE_TIMEOUT >= REQUEST_TIMEOUT * 3 + Duration::from_secs(3));
     }
 
     #[tokio::test]

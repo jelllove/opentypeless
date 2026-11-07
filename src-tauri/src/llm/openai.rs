@@ -42,9 +42,11 @@ impl LlmProvider for OpenAiProvider {
             .as_ref()
             .is_some_and(|s| !s.trim().is_empty());
 
+        let relevant_dictionary =
+            crate::bundled_dictionary::relevant_terms(&req.dictionary, &req.raw_text);
         let system_prompt = prompt::build_context_system_prompt(prompt::ContextPromptOptions {
             context: &req.context,
-            dictionary: &req.dictionary,
+            dictionary: &relevant_dictionary,
             correction_rules: &req.correction_rules,
             polish_style: &req.polish_style,
             personal_style_prompt: "",

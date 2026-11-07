@@ -279,6 +279,8 @@
     }
   },
   "settings": {
+    "recordingSounds": "Aufnahmetöne",
+    "recordingSoundsHint": "Kurzer Ton bei Aufnahmebeginn und -ende. Standardmäßig an; kein Netzwerk nötig.",
     "azureSpeechEndpoint": "Azure Speech-Endpunkt",
     "azureSpeechHint": "HTTPS-Endpunkt und Schlüssel der Speech-Ressource in einer Region mit schneller Transkription verwenden. Die Transkription erfolgt nach Aufnahmeende. Der Test sendet eine kurze stille Aufnahme.",
     "azureDeploymentName": "Azure-Bereitstellungsname",
@@ -498,6 +500,7 @@
     "general": "Allgemein"
   },
   "dictionary": {
+    "bundledHint": "2.967 chinesische und technische Begriffe sind enthalten. Kein Download nötig; eigene Einträge bleiben erhalten, gelöschte Vorgaben werden nicht wiederhergestellt.",
     "word": "Wort",
     "pronunciation": "Aussprache",
     "pronunciationOptional": "Aussprache (optional)",

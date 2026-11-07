@@ -1107,7 +1107,7 @@ pub(crate) async fn start_reserved_ask_dictation(
             Some(client.inner().clone()),
         )
         .map_err(|e| e.to_string())?;
-        let (mut handle, mut audio_rx) = AudioCaptureHandle::start(AudioConfig::default())
+        let (mut handle, mut audio_rx) = AudioCaptureHandle::start(AudioConfig { recording_sounds_enabled: config.recording_sounds_enabled, ..AudioConfig::default() })
             .map_err(|e| map_audio_capture_error(&e.to_string()))?;
         let capture_ready_at = match crate::audio::await_recording_startup(
             handle.wait_until_ready(),

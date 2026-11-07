@@ -1,5 +1,6 @@
 pub mod app_detector;
 pub mod audio;
+pub mod bundled_dictionary;
 pub mod cloud_request;
 pub mod commands;
 pub mod credentials;
@@ -922,6 +923,9 @@ pub fn run() {
                 .map_err(|e| anyhow::anyhow!("Failed to init history store: {}", e))?;
             let dictionary_store = storage::DictionaryStore::new(db_path)
                 .map_err(|e| anyhow::anyhow!("Failed to init dictionary store: {}", e))?;
+            dictionary_store
+                .seed_bundled_defaults()
+                .map_err(|e| anyhow::anyhow!("Failed to initialize bundled dictionary: {e}"))?;
 
             let shared_client = build_shared_http_client();
 

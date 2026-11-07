@@ -11,7 +11,7 @@ Provide keyboard-first voice input with user-controlled transcription and text c
 ## Functional Requirements
 - Windows defaults to Right Alt in toggle mode. Explicit existing custom shortcuts remain unchanged; Right Alt settings survive saves and restarts.
 - Settings provide an explicit Right Alt option. Native key-edge deduplication prevents a held key from toggling repeatedly. Other platforms retain their current defaults.
-- Azure Speech uses synchronous fast transcription after recording stops, with a resource HTTPS endpoint, a separately stored API key, automatic language identification or a selected language, and bounded audio buffering.
+- Azure Speech uses synchronous fast transcription after recording stops, with a resource HTTPS endpoint, a separately stored API key, automatic language identification or a selected language, and bounded audio buffering. Transient network/timeout/HTTP 5xx failures retry at most twice with 1s/2s backoff and identical recorded audio; auth, validation, quota and malformed-result failures do not retry. Cancellation interrupts upload/backoff and the finalization budget covers all attempts.
 - Azure OpenAI and Foundry use OpenAI-compatible Chat Completions or Responses, API-key authentication, a configurable HTTPS endpoint, and the deployment name as `model`. A complete `/openai/responses?api-version=...` or `/openai/v1/responses` URL selects Responses automatically. Root resource endpoints without an API version use v1 Chat Completions; versioned roots use deployment-scoped Chat Completions like the Azure SDK. Legacy deployment URLs preserve their explicit API version.
 - Responses requests are stateless (`store: false`), use Responses input/output fields, and support text streaming. Incomplete or failed responses are surfaced as errors; target-app insertion waits for completion even when streaming insertion is enabled.
 - Dictation and Ask show a smooth, tapered waveform centered in place. Measured loudness controls its amplitude; phase flows only while speech is present, silence settles to a flat centerline, and reduced-motion retains live loudness without continuous decorative motion.
@@ -20,6 +20,9 @@ Provide keyboard-first voice input with user-controlled transcription and text c
 - Connection tests exercise the configured Azure endpoint and preserve actionable HTTP errors. Keys use the existing credential vault path and are never written into documentation.
 - Azure models participate in all existing BYOK LLM workflows, including streaming text cleanup.
 - Existing Google Gemini support remains available. Foundry support does not promise that every model vendor is available: a deployment must actually expose the supported API.
+- The installer includes a licensed 2,967-term starter vocabulary (Chinese/common words and software abbreviations). First launch seeds it once into the existing dictionary without overwriting custom spellings/pronunciations; removed defaults do not reappear on restart.
+- LLM cleanup sends at most 64 relevant dictionary spellings per request rather than the entire vocabulary. This is a spelling-hint dictionary, not a definition lookup or provider-specific ASR phrase-list feature.
+- Distinct original start/stop chimes are enabled by default for dictation and Ask, configurable in General. Cues follow microphone capture lifecycle, not raw key events; the start cue is gated out of audio samples, and the stop cue plays after the input stream is closed. Missing/muted speakers do not fail recording.
 
 ## Non-Goals
 - Provisioning Azure resources or model deployments.

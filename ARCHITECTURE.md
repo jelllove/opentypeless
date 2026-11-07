@@ -33,14 +33,24 @@ Windows focused-input checks inspect caret presence and UI Automation capabiliti
 | Preserve explicitly configured shortcuts | Replace all saved Windows defaults | Avoid changing unrelated user preferences. New Windows defaults use Right Alt toggle, and old installations can explicitly select it without migration undoing the selection. |
 | Existing native Right Alt key-edge monitor | Generic modifier-only shortcut registration | Handles a physical modifier key and deduplicates held-key repeats on Windows. |
 
+## Bundled Dictionary
+
+A pinned MIT jieba frequency list and CC0 software-abbreviation list are converted into a compact 2,967-term spelling pack, with original provider/project spellings added. Only text data and license notices are bundled; downloaded source code is never executed. The installer contains the terms and source/license metadata, and the executable embeds the terms for offline startup.
+
+Startup seeds the pack in one SQLite transaction with a persistent seed-version marker. Existing normalized identities are skipped; user pronunciations remain unchanged. The marker survives deletion of default words and prevents repopulation. LLM providers select at most 64 case-insensitive relevant spellings with English word-boundary checks, bounding prompt growth without modifying the user's dictionary.
+
+## Recording Cues
+
+The native capture thread synthesizes distinct 180 ms two-note cues. Windows uses native in-memory WAV playback; other platforms use best-effort CPAL output. Capture callbacks are gated during the opening cue and a short tail guard, so these samples are not sent to STT. Stopping gates input immediately and closes the stream before playing the closing cue. The default-on preference is persisted with backward-compatible defaults and shared by dictation and Ask. Cues use no network, model, or external sound assets.
+
 ## Fork Distribution
 
-The user-approved publishing target is `jelllove/opentypeless`. Windows x64 v1.2.0 is an explicitly unsigned manual-install release, independent of upstream's cross-repository signing pipeline. The application identifier is preserved for in-place upgrades and existing preferences; repository/update links point to the fork to prevent a later upstream update silently replacing these custom features. No signed updater artifacts are published without the matching private signing key.
+The user-approved publishing target is `jelllove/opentypeless`. Windows x64 v1.3.0 is an explicitly unsigned manual-install release, independent of upstream's cross-repository signing pipeline. The application identifier is preserved for in-place upgrades and existing preferences; repository/update links point to the fork to prevent a later upstream update silently replacing these custom features. No signed updater artifacts are published without the matching private signing key.
 
 ## Constraints
 
 - Azure Speech is not realtime in this iteration; the local buffer limits recordings to 12 minutes regardless of Azure's larger file limits.
-- Transcription upload is not automatically retried. A network failure is surfaced instead of introducing implicit duplicate usage.
+- Azure Speech upload retries transient transport/timeout/5xx failures at most twice, reusing audio and definition. Finalization covers three 120-second attempts, 1s/2s backoff and a 15-second margin. An earlier request may have been processed before its response was lost, so retries can incur duplicate usage. Permanent/invalid-result failures are surfaced without retry.
 - Azure resource/deployment provisioning and Entra token refresh are not included.
 - Foundry model availability and API compatibility are deployment-specific. Google Gemini direct integration remains independent.
 - Automated local request fixtures do not verify physical keyboard/microphone behavior or actual Azure resources.

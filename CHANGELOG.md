@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-11-07
+
+### Added
+- Bundled 2,967-term Chinese/common and software vocabulary, installed offline on first launch without overwriting user terms or restoring deleted defaults.
+- Original short recording start/stop chimes, enabled by default and configurable in General for dictation and Ask.
+- Azure Speech automatic retry for transient transport, timeout and HTTP 5xx failures: up to two retries with 1-second and 2-second backoff, reusing the recorded audio.
+
+### Changed
+- Dictionary hints are selected for relevance and bounded to 64 spellings per cleanup request.
+- Azure Speech finalization waits long enough for all three request budgets and backoff; authentication, validation, quota and malformed-result errors are not retried.
+- Starter vocabulary source revisions/checksums and MIT/CC0 redistribution notices are shipped in the installer.
+
+### Fixed
+- Capture gating excludes opening chime samples and closes input before the ending chime.
+- Cancelling transcription interrupts upload/backoff rather than requiring a new recording or waiting for retries.
+
 ## [1.2.0] - 2026-11-07
 
 ### Added

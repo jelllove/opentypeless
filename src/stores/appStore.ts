@@ -227,6 +227,7 @@ export interface AppConfig {
   hotkey: string
   ask_hotkey: string
   hotkey_mode: HotkeyMode
+  recording_sounds_enabled: boolean
   hotkeys: HotkeyConfig
   output_mode: OutputMode
   insertion_strategy: InsertionStrategy
@@ -768,6 +769,7 @@ const defaultConfig: AppConfig = {
   hotkey: defaultDictationHotkey(),
   ask_hotkey: defaultAskHotkey(),
   hotkey_mode: defaultDictationHotkeyMode(),
+  recording_sounds_enabled: true,
   hotkeys: {
     dictation: bindingFromHotkey(defaultDictationHotkey())!,
     ask: bindingFromHotkey(defaultAskHotkey()),

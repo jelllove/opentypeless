@@ -346,6 +346,14 @@ describe('Settings tab 切换', () => {
     seedSavedConfig()
   })
 
+  it('enables recording cues by default and allows disabling them', () => {
+    renderSettings()
+    const toggle = screen.getByRole('switch', { name: 'settings.recordingSounds' })
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    fireEvent.click(toggle)
+    expect(useAppStore.getState().config.recording_sounds_enabled).toBe(false)
+  })
+
   it('初始渲染显示简化后的常用设置', () => {
     renderSettings()
 

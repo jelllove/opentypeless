@@ -279,6 +279,8 @@
     }
   },
   "settings": {
+    "recordingSounds": "Sons d’enregistrement",
+    "recordingSoundsHint": "Son bref au début et à la fin. Activé par défaut, sans réseau ni service payant.",
     "azureSpeechEndpoint": "Point de terminaison Azure Speech",
     "azureSpeechHint": "Utilisez le point de terminaison HTTPS et la clé de la ressource Speech dans une région prenant en charge la transcription rapide. La transcription suit l’arrêt de l’enregistrement. Le test envoie un court silence.",
     "azureDeploymentName": "Nom du déploiement Azure",
@@ -498,6 +500,7 @@
     "general": "Général"
   },
   "dictionary": {
+    "bundledHint": "2967 termes chinois et logiciels sont inclus. Aucun téléchargement ; vos termes sont conservés et les termes supprimés ne reviennent pas.",
     "word": "Mot",
     "pronunciation": "Prononciation",
     "pronunciationOptional": "Prononciation (facultatif)",

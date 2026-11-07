@@ -279,6 +279,8 @@
     }
   },
   "settings": {
+    "recordingSounds": "Suoni di registrazione",
+    "recordingSoundsHint": "Suono breve all’inizio e alla fine. Attivo per impostazione predefinita, senza rete o servizi a pagamento.",
     "azureSpeechEndpoint": "Endpoint Azure Speech",
     "azureSpeechHint": "Usa endpoint HTTPS e chiave della risorsa Speech in una regione con trascrizione rapida. L’audio viene trascritto dopo l’arresto della registrazione. Il test invia un breve campione silenzioso.",
     "azureDeploymentName": "Nome della distribuzione Azure",
@@ -498,6 +500,7 @@
     "general": "Generali"
   },
   "dictionary": {
+    "bundledHint": "Include 2967 termini cinesi e software. Nessun download; conserva i termini personali e non ripristina quelli eliminati.",
     "word": "Parola",
     "pronunciation": "Pronuncia",
     "pronunciationOptional": "Pronuncia (opzionale)",

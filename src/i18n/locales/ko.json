@@ -279,6 +279,8 @@
     }
   },
   "settings": {
+    "recordingSounds": "녹음 알림음",
+    "recordingSoundsHint": "녹음 시작과 종료 시 짧은 소리를 재생합니다. 기본 켜짐, 네트워크나 유료 서비스 불필요.",
     "azureSpeechEndpoint": "Azure Speech 엔드포인트",
     "azureSpeechHint": "빠른 전사를 지원하는 지역의 Speech 리소스 HTTPS 엔드포인트와 키를 입력하세요. 녹음을 중지한 후 전사합니다. 테스트는 짧은 무음 샘플을 전송합니다.",
     "azureDeploymentName": "Azure 배포 이름",
@@ -498,6 +500,7 @@
     "general": "일반"
   },
   "dictionary": {
+    "bundledHint": "중국어 일반 단어와 소프트웨어 용어 2,967개가 포함되어 있습니다. 다운로드 불필요, 기존 사용자 용어 유지, 삭제된 기본 용어 복원 없음.",
     "word": "단어",
     "pronunciation": "발음",
     "pronunciationOptional": "발음 (선택)",

@@ -14,7 +14,7 @@ New Windows installations default to Right Alt toggle recording. Existing explic
 4. Click **Test**. This sends a short synthetic silent WAV to the configured resource and can incur usage charges; it does not record the microphone. A successful silent response verifies transport/authentication, not recognition quality.
 5. Record a short phrase, stop, and verify transcription and insertion. Keys are kept in the existing OS credential vault, separate from endpoint configuration.
 
-The adapter uses `POST /speechtotext/transcriptions:transcribe?api-version=2025-10-15` with multipart `audio` and `definition`. There are no realtime partial transcripts. The app recommends 10 minutes and enforces a 12-minute/24 MiB PCM ceiling even though Azure can accept larger files. Each upload has a 120-second request budget and a 135-second finalization budget. The first version does not automatically retry transcription uploads.
+The adapter uses `POST /speechtotext/transcriptions:transcribe?api-version=2025-10-15` with multipart `audio` and `definition`. There are no realtime partial transcripts. The app recommends 10 minutes and enforces a 12-minute/24 MiB PCM ceiling even though Azure can accept larger files. Each attempt has a 120-second upload/read budget. Transient network failures, timeouts and HTTP 5xx retry at most twice after 1s and 2s, reusing the same audio. The total finalization budget is 378 seconds to cover all three attempts and overhead. HTTP 400/401/403/429 and malformed results do not retry. Cancellation stops pending uploads/backoff. A lost response can mean an earlier attempt was already processed, so retries may incur duplicate provider usage.
 
 HTTP 401/403: check that the key belongs to this resource and that the selected API is enabled for its tier/region. HTTP 404: check the resource endpoint and region support. HTTP 429: check resource quota or retry later. Do not paste keys into logs or source-controlled files.
 
@@ -51,6 +51,20 @@ Record with focus on the desktop, a read-only control, or another known non-inpu
 
 For normal successful insertion, a copy action remains available for eight seconds. Windows input detection uses caret/UI Automation metadata only and is best effort: some custom editors do not expose editable state, so Unknown retains the existing typing path. No focused input contents are read. Other platforms keep existing output detection/fallback behavior but share the copy-ready capsule.
 
+### Bundled dictionary and recording cues
+
+The installer contains `resources/dictionary/` with 2,967 starter spellings, pinned-source metadata and MIT/CC0 notices. Startup seeds the existing dictionary once, in a transaction. Existing words/pronunciations remain intact; deletion or backup restoration does not reset the seed marker. Repeated startup must not reinsert deleted defaults. The UI remains editable and can export the combined vocabulary.
+
+To regenerate the pack, download data/licensing files at the revisions in `resources/dictionary/sources.json` into separate empty staging directories, then run from the project root:
+
+```bash
+node scripts/build-bundled-dictionary.mjs <jieba-staging-dir> <acronyms-staging-dir> src-tauri/resources/dictionary
+```
+
+The generator only reads data; do not execute scripts or interpreters from downloaded directories. Commit generated vocabulary and its license/source metadata together. Do not ship the upstream source trees. LLM cleanup selects at most 64 relevant spellings, so the whole dictionary does not increase every request's prompt.
+
+Recording sounds default on and can be disabled in General. Verify start and stop with both toggle and hold modes. The start cue is played with capture callbacks gated, followed by a 35 ms tail guard; the stop cue is played after capture closes. A muted/unavailable output device may make cues inaudible but must not fail input capture. Use headphones to minimize room reverberation. Cue waveform/gating tests do not prove physical speaker audibility. Other platforms' sound playback remains best effort; the current installer is Windows x64.
+
 ### Local automated verification
 
 Use the Verification commands below. Azure tests use local HTTP fixtures and synthetic audio, not real Azure credentials. A passing test suite does not establish live Azure connectivity or physical-key/microphone operation. No external Azure request should be made until the user configures credentials and authorizes its sample data/cost.
@@ -85,6 +99,10 @@ if ($LASTEXITCODE -ne 0) { throw 'Installer build failed.' }
 The `.exe` installer is written to `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`. For convenience, the verified local installer can also be copied to `output/`. This command builds an unsigned local installer, not an official signed release. It does not install or launch the application. Windows may show an unknown-publisher or SmartScreen warning; do not disable system protection globally.
 
 The bundled application must have the PE machine type `0x8664` (AMD64). The NSIS installer bootstrap itself can have machine type `0x014C` (x86), even when it installs an x64 application; this is normal and does not indicate the wrong application target.
+
+### Bundled-dictionary / chime test installer
+
+The previous local dictionary/chime test build was `output/OpenTypeless_1.2.0_bundled-dictionary-chimes_x64-setup.exe`. Release v1.3.0 supersedes it with the bundled vocabulary, recording cues and Azure Speech transient retries. The release installer is `OpenTypeless_1.3.0_x64-setup.exe`; verify its `SHA256SUMS.txt`, exit the tray app, and install manually. Bundled data/license metadata ship under `resources/dictionary/`.
 
 ### Azure / Right Alt test installer
 

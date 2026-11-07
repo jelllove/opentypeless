@@ -279,6 +279,8 @@
     }
   },
   "settings": {
+    "recordingSounds": "Sons de gravação",
+    "recordingSoundsHint": "Som curto ao iniciar e parar. Ativado por padrão, sem rede nem serviço pago.",
     "azureSpeechEndpoint": "Endpoint do Azure Speech",
     "azureSpeechHint": "Use o endpoint HTTPS e a chave do recurso Speech em uma região com transcrição rápida. O áudio é transcrito ao parar a gravação. O teste envia uma breve amostra silenciosa.",
     "azureDeploymentName": "Nome da implantação Azure",
@@ -498,6 +500,7 @@
     "general": "Geral"
   },
   "dictionary": {
+    "bundledHint": "Inclui 2967 termos chineses e de software. Sem downloads; preserva termos pessoais e não restaura padrões excluídos.",
     "word": "Palavra",
     "pronunciation": "Pronúncia",
     "pronunciationOptional": "Pronúncia (opcional)",

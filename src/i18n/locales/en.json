@@ -280,6 +280,8 @@
     }
   },
   "settings": {
+    "recordingSounds": "Recording sounds",
+    "recordingSoundsHint": "Play a short chime when recording starts and stops. Default on; no network or paid service.",
     "azureSpeechEndpoint": "Azure Speech endpoint",
     "azureSpeechHint": "Use your Speech resource HTTPS endpoint and its key in a fast-transcription-supported region. Audio is transcribed after recording stops. Test sends a short silent sample.",
     "azureDeploymentName": "Azure deployment name",
@@ -499,6 +501,7 @@
     "general": "General"
   },
   "dictionary": {
+    "bundledHint": "A starter dictionary of 2,967 Chinese/common and software terms is included. No download is needed. Existing custom terms are preserved; deleted defaults are not restored.",
     "word": "Word",
     "pronunciation": "Pronunciation",
     "pronunciationOptional": "Pronunciation (optional)",
