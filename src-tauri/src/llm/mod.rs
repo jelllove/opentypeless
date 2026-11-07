@@ -1,9 +1,12 @@
+pub mod azure;
 pub mod cloud;
 pub mod context_policy;
 pub mod model_capabilities;
 pub mod openai;
 pub mod prompt;
 pub mod protocol;
+pub mod responses;
+pub mod stream;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};

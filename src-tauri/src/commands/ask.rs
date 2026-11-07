@@ -703,6 +703,8 @@ fn build_ask_stt_config(
         ),
         provider_region: (config.stt_provider == stt::aliyun_qwen3_asr::ALIYUN_QWEN3_ASR_PROVIDER)
             .then(|| config.stt_aliyun_qwen_region.clone()),
+        provider_endpoint: (config.stt_provider == stt::azure_speech::PROVIDER)
+            .then(|| config.stt_azure_endpoint.clone()),
     }
 }
 
@@ -895,7 +897,11 @@ async fn ask_via_byok(
 
     let api_kind =
         crate::llm::protocol::detect_api_kind(&config.llm_provider, &config.llm_base_url);
-    let url = crate::llm::protocol::chat_endpoint(&config.llm_provider, &config.llm_base_url)?;
+    let url = crate::llm::protocol::chat_endpoint_for_model(
+        &config.llm_provider,
+        &config.llm_base_url,
+        &config.llm_model,
+    )?;
     let request = client
         .post(url)
         .header("Content-Type", "application/json")
@@ -924,6 +930,9 @@ async fn ask_via_byok(
     }
 
     let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    if let Some(error) = crate::llm::protocol::response_error(api_kind, &body) {
+        return Err(error);
+    }
     validate_ask_answer(&crate::llm::protocol::response_text(api_kind, &body))
 }
 
@@ -1189,6 +1198,20 @@ pub(crate) async fn start_reserved_ask_dictation(
         let state_inner = state.0.clone();
         let deadline_state_inner = state.0.clone();
         let deadline_app = app.clone();
+        let level_state = state.0.clone();
+        let level_app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            loop {
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                let level = {
+                    let guard = level_state.lock().unwrap_or_else(|e| e.into_inner());
+                    guard.session.as_ref().filter(|session| session.recording_session_id == recording_session_id)
+                        .map(|session| session.handle.get_volume())
+                };
+                let Some(level) = level else { break; };
+                let _ = level_app.emit("audio:volume", level);
+            }
+        });
         if let Some(session_token) = managed_cloud_session_token {
             let warmup_client = client.inner().clone();
             let warmup_state_inner = state.0.clone();
@@ -1877,6 +1900,46 @@ mod tests {
         assert_eq!(body["max_completion_tokens"], ASK_OUTPUT_TOKEN_LIMIT);
         assert!(body.get("max_tokens").is_none());
         assert!(body.get("temperature").is_none());
+    }
+
+    #[test]
+    fn azure_ask_uses_deployment_alias_and_speech_resource_endpoint() {
+        let config = storage::AppConfig {
+            stt_provider: "azure-speech".into(),
+            stt_azure_endpoint: "https://speech.cognitiveservices.azure.com".into(),
+            stt_language: "zh".into(),
+            llm_provider: "azure-openai".into(),
+            llm_base_url: "https://test.openai.azure.com/openai/v1".into(),
+            llm_model: "custom-gpt-deployment".into(),
+            ..Default::default()
+        };
+        let body = build_byok_ask_body_for_config(&config, "Explain this.", None).unwrap();
+        assert_eq!(body["model"], "custom-gpt-deployment");
+        assert_eq!(body["max_completion_tokens"], ASK_OUTPUT_TOKEN_LIMIT);
+        assert!(body.get("temperature").is_none());
+        let stt = build_ask_stt_config(&config, "speech-key".into(), "operation".into());
+        assert_eq!(
+            stt.provider_endpoint.as_deref(),
+            Some("https://speech.cognitiveservices.azure.com")
+        );
+        assert_eq!(stt.language.as_deref(), Some("zh"));
+    }
+
+    #[test]
+    fn azure_responses_ask_uses_input_and_does_not_store_a_session() {
+        let config = storage::AppConfig {
+            llm_provider: "azure-openai".into(),
+            llm_base_url:
+                "https://example.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
+                    .into(),
+            llm_model: "gpt-6.1-sol".into(),
+            ..Default::default()
+        };
+        let body = build_byok_ask_body_for_config(&config, "Explain this.", None).unwrap();
+        assert_eq!(body["store"], false);
+        assert_eq!(body["input"][1]["role"], "user");
+        assert_eq!(body["max_output_tokens"], ASK_OUTPUT_TOKEN_LIMIT);
+        assert!(body.get("messages").is_none());
     }
 
     #[test]

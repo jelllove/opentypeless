@@ -1334,7 +1334,11 @@ mod tests {
 
         #[cfg(target_os = "windows")]
         {
-            assert!(plan
+            assert!(plan.native.iter().any(|entry| {
+                entry.role == HotkeyRole::Dictation
+                    && entry.trigger == NativeHotkeyTrigger::RightAlt
+            }));
+            assert!(!plan
                 .global
                 .iter()
                 .any(|entry| entry.role == HotkeyRole::Dictation));
@@ -1346,7 +1350,7 @@ mod tests {
                 .global
                 .iter()
                 .any(|entry| entry.role == HotkeyRole::TranslateSelection));
-            assert!(plan.native.is_empty());
+            assert_eq!(plan.native.len(), 1);
         }
 
         #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
@@ -1547,6 +1551,38 @@ mod tests {
                 pipeline::PipelineStartOptions {
                     force_translate: true,
                 },
+            ),
+            RecordingShortcutAction::Stop
+        );
+    }
+
+    #[test]
+    fn toggle_press_starts_and_stops_while_release_is_ignored() {
+        let options = pipeline::PipelineStartOptions::default();
+        assert_eq!(
+            recording_shortcut_action(
+                "toggle",
+                ShortcutState::Pressed,
+                pipeline::PipelineState::Idle,
+                options
+            ),
+            RecordingShortcutAction::Start { options }
+        );
+        assert_eq!(
+            recording_shortcut_action(
+                "toggle",
+                ShortcutState::Released,
+                pipeline::PipelineState::Recording,
+                options
+            ),
+            RecordingShortcutAction::Ignore
+        );
+        assert_eq!(
+            recording_shortcut_action(
+                "toggle",
+                ShortcutState::Pressed,
+                pipeline::PipelineState::Recording,
+                options
             ),
             RecordingShortcutAction::Stop
         );

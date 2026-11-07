@@ -150,6 +150,39 @@ vi.mock('../../../stores/authStore', () => ({
 }))
 
 describe('LlmPane', () => {
+  it('offers Azure providers and explains deployment names', () => {
+    mockAppStore.config.llm_provider = 'azure-openai'
+    render(<LlmPane />)
+    expect(screen.getByRole('option', { name: 'providers.llm.azureOpenai' })).toHaveValue(
+      'azure-openai',
+    )
+    expect(screen.getByRole('option', { name: 'providers.llm.azureFoundry' })).toHaveValue(
+      'azure-foundry',
+    )
+    expect(screen.getByPlaceholderText('settings.azureDeploymentPlaceholder')).toBeInTheDocument()
+    expect(screen.getByText('settings.azureLlmHint')).toBeInTheDocument()
+  })
+
+  it('tests the exact configured Azure Responses endpoint and deployment', async () => {
+    const endpoint =
+      'https://example.openai.azure.com/openai/responses?api-version=2025-04-01-preview'
+    mockAppStore.config.llm_provider = 'azure-openai'
+    mockAppStore.config.llm_base_url = endpoint
+    mockAppStore.config.llm_model = 'gpt-6.1-sol'
+    mockAppStore.config.llm_api_key = 'test-key'
+    vi.mocked(tauri.benchLlmConnection).mockResolvedValue(100)
+    render(<LlmPane />)
+    fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+    await waitFor(() =>
+      expect(tauri.benchLlmConnection).toHaveBeenCalledWith(
+        'test-key',
+        'azure-openai',
+        endpoint,
+        'gpt-6.1-sol',
+      ),
+    )
+  })
+
   beforeEach(() => {
     // Reset mock store state
     mockAppStore.config = {

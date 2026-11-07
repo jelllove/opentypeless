@@ -12,6 +12,7 @@ export function SttSetupStep() {
   const sttTestStatus = useAppStore((s) => s.sttTestStatus)
   const setSttTestStatus = useAppStore((s) => s.setSttTestStatus)
   const fallbackProvider = ONBOARDING_STT_PROVIDERS[0]?.value ?? 'deepgram'
+  const isAzureSpeech = config.stt_provider === 'azure-speech'
   const isCustomWhisper = config.stt_provider === CUSTOM_WHISPER_PROVIDER
   const selectedProvider = isCustomWhisper
     ? CUSTOM_WHISPER_PROVIDER
@@ -37,7 +38,15 @@ export function SttSetupStep() {
             config.stt_custom_base_url,
             config.stt_custom_model,
           )
-        : await testSttConnection(config.stt_api_key, selectedProvider)
+        : await testSttConnection(
+            config.stt_api_key,
+            selectedProvider,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            isAzureSpeech ? config.stt_azure_endpoint : undefined,
+          )
       setSttTestStatus(ok ? 'success' : 'error')
     } catch {
       setSttTestStatus('error')
@@ -79,6 +88,21 @@ export function SttSetupStep() {
         </Field>
       )}
 
+      {isAzureSpeech && (
+        <Field label={t('settings.azureSpeechEndpoint')}>
+          <input
+            aria-label={t('settings.azureSpeechEndpoint')}
+            value={config.stt_azure_endpoint}
+            onChange={(e) => {
+              updateConfig({ stt_azure_endpoint: e.target.value })
+              setSttTestStatus('idle')
+            }}
+            placeholder="https://your-resource.cognitiveservices.azure.com"
+            className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
+          />
+          <p className="mt-1 text-[11px] text-text-tertiary">{t('settings.azureSpeechHint')}</p>
+        </Field>
+      )}
       <Field label={t('onboarding.stt.apiKeyLabel')}>
         <div className="flex gap-2">
           <input
@@ -99,6 +123,7 @@ export function SttSetupStep() {
             onClick={handleTest}
             disabled={
               sttTestStatus === 'testing' ||
+              (isAzureSpeech && !config.stt_azure_endpoint?.trim()) ||
               (isCustomWhisper
                 ? !config.stt_custom_base_url.trim() || !config.stt_custom_model.trim()
                 : !config.stt_api_key)

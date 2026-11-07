@@ -53,6 +53,7 @@ export function SttPane() {
   const [recordingLimit, setRecordingLimit] = useState<ResolvedSttRecordingLimit | null>(null)
   const [customDurationEntryRequested, setCustomDurationEntryRequested] = useState(false)
 
+  const isAzureSpeech = config.stt_provider === 'azure-speech'
   const isCloud = config.stt_provider === 'cloud'
   const isAppleSpeech = config.stt_provider === APPLE_SPEECH_PROVIDER
   const isCustomWhisper = config.stt_provider === CUSTOM_WHISPER_PROVIDER
@@ -75,9 +76,11 @@ export function SttPane() {
   const appleSpeechUnavailable = sttDiagnostics?.ready === false
   const canTest = isAppleSpeech
     ? appleSpeechReady
-    : isCustomWhisper
-      ? Boolean(config.stt_custom_base_url.trim() && config.stt_custom_model.trim())
-      : Boolean(apiKeyDraft)
+    : isAzureSpeech
+      ? Boolean(apiKeyDraft.trim() && config.stt_azure_endpoint?.trim())
+      : isCustomWhisper
+        ? Boolean(config.stt_custom_base_url.trim() && config.stt_custom_model.trim())
+        : Boolean(apiKeyDraft)
   const goUpgrade = () => {
     window.location.hash = '#/upgrade'
   }
@@ -196,7 +199,17 @@ export function SttPane() {
     setTestErrorMessage(null)
     try {
       let ms: number
-      if (isCustomWhisper) {
+      if (isAzureSpeech) {
+        ms = await benchSttConnection(
+          apiKeyDraft,
+          config.stt_provider,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          config.stt_azure_endpoint,
+        )
+      } else if (isCustomWhisper) {
         ms = await benchSttConnection(
           apiKeyDraft,
           config.stt_provider,
@@ -429,6 +442,25 @@ export function SttPane() {
         </FormField>
       ) : (
         <>
+          {isAzureSpeech && (
+            <FormField label={t('settings.azureSpeechEndpoint')}>
+              <input
+                aria-label={t('settings.azureSpeechEndpoint')}
+                value={config.stt_azure_endpoint ?? ''}
+                onChange={(e) => {
+                  updateConfig({ stt_azure_endpoint: e.target.value })
+                  setSttTestStatus('idle')
+                  setSttLatencyMs(null)
+                  setTestErrorMessage(null)
+                }}
+                placeholder="https://your-resource.cognitiveservices.azure.com"
+                className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
+              />
+              <p className="text-[11px] text-text-tertiary mt-1.5">
+                {t('settings.azureSpeechHint')}
+              </p>
+            </FormField>
+          )}
           {isCustomWhisper && (
             <>
               <FormField label={t('settings.customSttPreset')}>

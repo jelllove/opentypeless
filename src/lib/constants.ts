@@ -13,11 +13,11 @@ export const UI_LANGUAGES = [
 ] as const
 
 export const APP_NAME = 'OpenTypeless'
-export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.1.61'
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.2.0'
 export const CLIENT_VERSION_HEADER = 'X-OpenTypeless-Version'
 export const APP_VERSION_HEADER_VALUE = APP_VERSION.replace(/^v/i, '')
-export const APP_REPO_URL = 'https://github.com/tover0314-w/opentypeless'
-export const APP_LICENSE_URL = 'https://github.com/tover0314-w/opentypeless/blob/main/LICENSE'
+export const APP_REPO_URL = 'https://github.com/jelllove/opentypeless'
+export const APP_LICENSE_URL = 'https://github.com/jelllove/opentypeless/blob/main/LICENSE'
 // Cloud API base URL — defaults to www.opentypeless.com but can be overridden via VITE_API_BASE_URL env var.
 // All core features (BYOK mode) work without any cloud connection.
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://www.opentypeless.com'
@@ -110,6 +110,7 @@ export const CUSTOM_STT_PRESETS = [
 export const STT_PROVIDERS: { value: string; labelKey: string }[] = [
   { value: 'deepgram', labelKey: 'providers.stt.deepgram' },
   { value: 'assemblyai', labelKey: 'providers.stt.assemblyai' },
+  { value: 'azure-speech', labelKey: 'providers.stt.azureSpeech' },
   { value: 'aliyun-qwen3-asr', labelKey: 'providers.stt.aliyunQwen3Asr' },
   { value: 'volcengine-doubao', labelKey: 'providers.stt.volcengineDoubao' },
   { value: 'glm-asr', labelKey: 'providers.stt.glmAsr' },
@@ -144,6 +145,8 @@ export const LLM_PROVIDERS: { value: string; labelKey: string }[] = [
   { value: 'deepseek', labelKey: 'providers.llm.deepseek' },
   { value: 'siliconflow', labelKey: 'providers.llm.siliconflow' },
   { value: 'openai', labelKey: 'providers.llm.openai' },
+  { value: 'azure-openai', labelKey: 'providers.llm.azureOpenai' },
+  { value: 'azure-foundry', labelKey: 'providers.llm.azureFoundry' },
   { value: 'gemini', labelKey: 'providers.llm.gemini' },
   { value: 'moonshot', labelKey: 'providers.llm.moonshot' },
   { value: 'doubao', labelKey: 'providers.llm.doubao' },
@@ -164,6 +167,8 @@ export const LLM_DEFAULT_CONFIG: Record<string, { baseUrl: string; model: string
   deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
   siliconflow: { baseUrl: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen2.5-7B-Instruct' },
   openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+  'azure-openai': { baseUrl: '', model: '' },
+  'azure-foundry': { baseUrl: '', model: '' },
   gemini: {
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     model: 'gemini-2.0-flash',

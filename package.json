@@ -1,7 +1,7 @@
 {
   "name": "opentypeless",
   "private": true,
-  "version": "1.1.64",
+  "version": "1.2.0",
   "type": "module",
   "description": "AI-powered speech-to-text and text polishing desktop app",
   "keywords": [
@@ -14,11 +14,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/tover0314-w/opentypeless"
+    "url": "https://github.com/jelllove/opentypeless"
   },
   "homepage": "https://www.opentypeless.com",
   "bugs": {
-    "url": "https://github.com/tover0314-w/opentypeless/issues"
+    "url": "https://github.com/jelllove/opentypeless/issues"
   },
   "author": "OpenTypeless Contributors",
   "license": "MIT",

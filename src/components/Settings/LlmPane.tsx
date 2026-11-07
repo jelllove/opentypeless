@@ -42,6 +42,7 @@ export function LlmPane() {
   const hasCloudAccess = useAuthStore(hasManagedCloudAccess)
   const { t } = useTranslation()
 
+  const isAzure = ['azure-openai', 'azure-foundry'].includes(config.llm_provider)
   const isCloud = config.llm_provider === 'cloud'
   const requiresApiKey = llmProviderRequiresApiKey(config.llm_provider)
   const polishPromptLength = config.polish_custom_prompt.length
@@ -339,7 +340,7 @@ export function LlmPane() {
             </FormField>
           )}
 
-          <FormField label={t('settings.model')}>
+          <FormField label={t(isAzure ? 'settings.azureDeploymentName' : 'settings.model')}>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
@@ -350,7 +351,11 @@ export function LlmPane() {
                     setLlmLatencyMs(null)
                     setTestErrorMessage(null)
                   }}
-                  placeholder={t('settings.llmModelPlaceholder')}
+                  placeholder={t(
+                    isAzure
+                      ? 'settings.azureDeploymentPlaceholder'
+                      : 'settings.llmModelPlaceholder',
+                  )}
                   className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
                 />
                 <datalist id="llm-model-list">
@@ -386,7 +391,10 @@ export function LlmPane() {
                   setTestErrorMessage(null)
                 }}
                 placeholder={
-                  LLM_DEFAULT_CONFIG[config.llm_provider]?.baseUrl ?? 'https://api.openai.com/v1'
+                  isAzure
+                    ? 'https://your-resource.openai.azure.com/openai/v1/'
+                    : (LLM_DEFAULT_CONFIG[config.llm_provider]?.baseUrl ??
+                      'https://api.openai.com/v1')
                 }
                 className="min-w-0 flex-1 px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
               />
@@ -402,6 +410,9 @@ export function LlmPane() {
                 </button>
               )}
             </div>
+            {isAzure && (
+              <p className="mt-1.5 text-[11px] text-text-tertiary">{t('settings.azureLlmHint')}</p>
+            )}
             {!requiresApiKey && renderConnectionFeedback(false)}
           </FormField>
         </>

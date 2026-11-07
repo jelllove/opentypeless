@@ -179,7 +179,7 @@ fn static_provider_capability(provider_id: &str) -> SttRecordingCapability {
             RecordingLimitSource::Provider,
             "recordingLimits.reasons.appleSpeech",
         ),
-        "groq-whisper" | "openai-whisper" | "siliconflow" => capability(
+        "groq-whisper" | "openai-whisper" | "siliconflow" | "azure-speech" => capability(
             provider_id,
             SttTransport::FileUpload,
             600,
@@ -428,6 +428,13 @@ mod tests {
             ),
             (
                 "siliconflow",
+                SttTransport::FileUpload,
+                600,
+                720,
+                RecordingLimitSource::ClientBuffer,
+            ),
+            (
+                "azure-speech",
                 SttTransport::FileUpload,
                 600,
                 720,

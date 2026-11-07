@@ -8,6 +8,7 @@ import type {
   AppConfig,
   ContextProfileSummary,
   InsertResult,
+  PendingOutput,
   PipelineState,
   RecordingDeadlineSnapshot,
   VoiceMode,
@@ -93,6 +94,7 @@ export function useTauriEvents() {
     addListener<string>('llm:chunk', appendPolishedChunk)
     addListener<PipelineState>('pipeline:state', (state) => {
       setPipelineState(state)
+      if (state !== 'recording') setAudioVolume(0)
       if (state === 'preparing' || state === 'recording' || state === 'ask_recording') {
         const config = useAppStore.getState().config
         managedRunActive =
@@ -103,6 +105,8 @@ export function useTauriEvents() {
         setRecordingDeadline(null)
       }
       if (state === 'preparing' || state === 'recording' || state === 'ask_recording') {
+        useAppStore.getState().setPendingOutput(null)
+        useAppStore.getState().setLastInsertResult(null)
         // Clear any previous error when starting a new pipeline run
         setPipelineError(null)
         useCloudServiceStore.getState().clearIncident()
@@ -144,6 +148,11 @@ export function useTauriEvents() {
     })
     addListener<VoiceMode | null>('pipeline:voice_mode', setActiveVoiceMode)
     addListener<string>('pipeline:target_app', setTargetApp)
+    addListener<PendingOutput>('pipeline:completed', (result) => {
+      if (!result.text.trim()) return
+      useAppStore.getState().setPolishedText(result.text)
+      useAppStore.getState().setPendingOutput(result)
+    })
     addListener<InsertResult>('pipeline:insert_result', setLastInsertResult)
     addListener<ContextProfileSummary>('pipeline:context', setLastContext)
     addListener<PipelineErrorPayload>('pipeline:error', (payload) => {
@@ -156,7 +165,10 @@ export function useTauriEvents() {
       if (incident) useCloudServiceStore.getState().setIncident(incident)
     })
     addListener<{ code: string; details?: string }>('pipeline:warning', (payload) => {
-      const message = t(`errors.${payload.code}`, { details: payload.details ?? '' })
+      const message = t(`errors.${payload.code}`, {
+        details: payload.details ?? '',
+        defaultValue: payload.details ?? payload.code,
+      })
       toast(message, 'info')
     })
     addListener<string>('hotkey:registration-failed', (payload) => {

@@ -232,6 +232,13 @@
     }
   },
   "capsule": {
+    "copyText": "复制文字",
+    "copiedText": "已复制",
+    "copyFailed": "复制失败，点击重试",
+    "dismissResult": "关闭结果",
+    "microphoneLevel": "麦克风输入音量",
+    "microphoneLevelValue": "输入音量：{{level}}%",
+
     "cancelRecording": "取消录音",
     "translationTarget": "翻译目标",
     "translationTargets": "翻译目标列表",
@@ -273,6 +280,11 @@
     }
   },
   "settings": {
+    "azureSpeechEndpoint": "Azure Speech 终结点",
+    "azureSpeechHint": "填写支持快速转录区域中的 Speech 资源 HTTPS 终结点及对应密钥。停止录音后转成文字；测试会发送一小段静音。",
+    "azureDeploymentName": "Azure 模型部署名称",
+    "azureDeploymentPlaceholder": "Azure / Foundry 中的部署名称",
+    "azureLlmHint": "填写资源终结点或完整 Chat Completions / Responses 地址、API Key 和部署名称。/responses 地址自动使用 Responses，请保留 api-version 参数；带 api-version 的资源根地址使用部署级 Chat Completions。Responses 不保存服务端会话。可手动填写部署名称，无需获取模型列表。Gemini 经 Foundry 使用须有可用的兼容部署。",
     "title": "设置",
     "general": "通用",
     "speechRecognition": "语音识别",
@@ -865,6 +877,7 @@
     "stt": {
       "deepgram": "Deepgram Nova-3",
       "assemblyai": "AssemblyAI",
+      "azureSpeech": "Azure Speech",
       "aliyunQwen3Asr": "阿里云 Qwen3 实时语音识别",
       "volcengineDoubao": "火山引擎豆包实时语音识别",
       "glmAsr": "智谱 GLM-ASR",
@@ -880,6 +893,8 @@
       "deepseek": "DeepSeek",
       "siliconflow": "硅基流动 SiliconFlow",
       "openai": "OpenAI",
+      "azureOpenai": "Azure OpenAI（GPT）",
+      "azureFoundry": "Azure / Microsoft Foundry",
       "gemini": "Google Gemini",
       "moonshot": "Moonshot (Kimi)",
       "doubao": "豆包（火山引擎）",

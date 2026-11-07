@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { MessageCircle, X } from 'lucide-react'
 import { abortAskDictation } from '../../lib/tauri'
-import { CapsuleWorkIndicator } from './CapsuleWorkIndicator'
+import { Waveform } from './Waveform'
 import { DurationTimer } from './DurationTimer'
 
 export function CapsuleAskRecording() {
@@ -24,8 +24,9 @@ export function CapsuleAskRecording() {
     <div className="relative z-10 flex h-9 items-center gap-2 px-3">
       <MessageCircle size={13} className="shrink-0 text-white/90" />
       <span className="whitespace-nowrap text-[11px] font-medium text-white">{t('ask.title')}</span>
-      <CapsuleWorkIndicator tone="steady" />
-      <div className="flex-1" />
+      <div className="flex min-w-0 flex-1 items-center justify-center">
+        <Waveform />
+      </div>
       <DurationTimer recordingKind="ask" />
       <button
         onPointerDown={stopPointerPropagation}

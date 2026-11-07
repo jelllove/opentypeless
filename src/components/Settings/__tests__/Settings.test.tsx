@@ -608,7 +608,7 @@ describe('Settings tab 切换', () => {
     expect(screen.queryByText('settings.hotkeyInvalid')).toBeNull()
   })
 
-  it('does not offer Windows RightAlt as a default shortcut chip', async () => {
+  it('offers Windows RightAlt for dictation without changing the Ask shortcut', async () => {
     const originalPlatform = window.navigator.platform
     Object.defineProperty(window.navigator, 'platform', {
       value: 'Win32',
@@ -630,8 +630,8 @@ describe('Settings tab 切换', () => {
       fireEvent.click(screen.getByText('settings.pressKeyCombination'))
 
       fireEvent.click(screen.getByText('Ctrl+/'))
-      expect(screen.queryByRole('button', { name: 'Right Alt' })).toBeNull()
-      expect(useAppStore.getState().config.hotkey).toBe('Ctrl+/')
+      fireEvent.click(screen.getByRole('button', { name: 'Right Alt' }))
+      expect(useAppStore.getState().config.hotkey).toBe('RightAlt')
     } finally {
       Object.defineProperty(window.navigator, 'platform', {
         value: originalPlatform,

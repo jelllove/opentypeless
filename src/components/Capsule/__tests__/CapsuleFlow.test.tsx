@@ -64,6 +64,14 @@ describe('Capsule flow states', () => {
     })
   })
 
+  it('shows copy-ready output after the backend returns to idle', () => {
+    useAppStore.getState().setPendingOutput({ text: 'Final text', status: 'clipboard_fallback' })
+    render(<Capsule />)
+    expect(screen.getByRole('button', { name: 'capsule.copyText' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'capsule.dismissResult' }))
+    expect(useAppStore.getState().pendingOutput).toBeNull()
+  })
+
   it('renders preparing state', () => {
     useAppStore.setState({ pipelineState: 'preparing' })
 
@@ -111,6 +119,7 @@ describe('Capsule flow states', () => {
     expect(screen.getByText('ask.title')).toBeInTheDocument()
     expect(screen.getByText('ask.title')).toHaveClass('whitespace-nowrap')
     expect(screen.getByText('00:00')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'capsule.microphoneLevel' })).toBeInTheDocument()
 
     const pointerUp = new Event('pointerup', { bubbles: true })
     Object.defineProperty(pointerUp, 'button', { value: 0 })

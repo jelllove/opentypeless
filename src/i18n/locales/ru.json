@@ -232,6 +232,12 @@
     }
   },
   "capsule": {
+    "copyText": "Копировать текст",
+    "copiedText": "Скопировано",
+    "copyFailed": "Ошибка копирования — повторить",
+    "dismissResult": "Закрыть результат",
+    "microphoneLevel": "Уровень микрофона",
+    "microphoneLevelValue": "Уровень входа: {{level}}%",
     "cancelRecording": "Отменить запись",
     "translationTarget": "Язык перевода",
     "translationTargets": "Языки перевода",
@@ -273,6 +279,11 @@
     }
   },
   "settings": {
+    "azureSpeechEndpoint": "Конечная точка Azure Speech",
+    "azureSpeechHint": "Укажите HTTPS-адрес и ключ ресурса Speech в регионе с быстрой транскрипцией. Текст создаётся после остановки записи. Проверка отправляет короткий образец тишины.",
+    "azureDeploymentName": "Имя развёртывания Azure",
+    "azureDeploymentPlaceholder": "Имя развёртывания Azure / Foundry",
+    "azureLlmHint": "Укажите адрес ресурса или полный URL Chat Completions/Responses, ключ и имя развёртывания. /responses выбирает Responses; сохраните api-version. Серверные сеансы не сохраняются. Список моделей необязателен.",
     "title": "Настройки",
     "general": "Общие",
     "speechRecognition": "Распознавание речи",
@@ -865,6 +876,7 @@
     "stt": {
       "deepgram": "Deepgram Nova-3",
       "assemblyai": "AssemblyAI",
+      "azureSpeech": "Azure Speech",
       "aliyunQwen3Asr": "Aliyun Qwen3 ASR в реальном времени",
       "volcengineDoubao": "Volcengine Doubao ASR в реальном времени",
       "glmAsr": "GLM-ASR (Zhipu)",
@@ -880,6 +892,8 @@
       "deepseek": "DeepSeek",
       "siliconflow": "SiliconFlow",
       "openai": "OpenAI",
+      "azureOpenai": "Azure OpenAI (GPT)",
+      "azureFoundry": "Azure / Microsoft Foundry",
       "gemini": "Google Gemini",
       "moonshot": "Moonshot (Kimi)",
       "doubao": "Doubao (Volcengine)",

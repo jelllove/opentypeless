@@ -8,6 +8,8 @@
 
 <h1 align="center">OpenTypeless</h1>
 
+> **Azure voice-input fork:** maintained at [jelllove/opentypeless](https://github.com/jelllove/opentypeless), based on [upstream OpenTypeless](https://github.com/tover0314-w/opentypeless). Download this fork's Windows x64 installer from [Releases](https://github.com/jelllove/opentypeless/releases). These installers are **unsigned** and are installed manually; Windows may show an Unknown Publisher or SmartScreen warning. This fork does not publish signed automatic-update packages. Upstream links and screenshots below describe the original project.
+
 <p align="center">
   Open-source alternative to Wispr Flow and Superwhisper for AI voice input, rewriting, and voice Q&A on macOS, Windows, and Linux.
 </p>
@@ -44,7 +46,16 @@
   <strong>Dictate anywhere</strong> · <strong>Rewrite selected text</strong> · <strong>Ask one-shot voice questions</strong> · <strong>Bring your own keys or use managed cloud words</strong>
 </p>
 
-## What's New in v1.1.55
+## What's New in This Fork (v1.2.0)
+
+- Right Alt toggle recording on Windows with persistent custom bindings.
+- Azure Speech transcription and Azure OpenAI / Foundry text cleanup through Chat Completions or Responses.
+- Smooth centered microphone waveform and copy-ready results when insertion is unavailable.
+- Azure connection-test HTTP 400 fix and byte-safe Responses streaming.
+
+See [CHANGELOG.md](CHANGELOG.md) and the [fork release](https://github.com/jelllove/opentypeless/releases/tag/v1.2.0).
+
+## Upstream Highlights in v1.1.55
 
 - **Stripe checkout for new purchases** with existing Creem subscriptions kept valid.
 - **More reliable cloud sign-in and billing** with secure session storage, clearer service-status messages, and stronger account-state recovery.
@@ -79,7 +90,7 @@ Default shortcuts now follow the Typeless-style flow:
 | Platform | Dictation | Ask Anything | Translate selected text |
 | -------- | --------- | ------------ | ----------------------- |
 | macOS    | `Fn`      | `Fn+Space`   | `Fn+LeftShift`          |
-| Windows  | `Right Alt` | `Right Alt+Space` | `Right Alt+LeftShift` |
+| Windows  | `Right Alt` (toggle) | `Ctrl+.` | `Ctrl+Shift+/` |
 | Linux    | `Ctrl+/`  | `Ctrl+.`     | configurable            |
 
 Linux keeps conservative Ctrl-based defaults because global Right Alt handling is less reliable across desktop environments, especially on Wayland.
@@ -115,7 +126,7 @@ OpenTypeless gives you four voice-first desktop workflows:
 
 | Workflow              | What happens                                                                                                           |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Dictation             | Hold a hotkey, speak, transcribe, optionally polish with an LLM, then type or copy the result into the active app      |
+| Dictation             | Press to start/stop or hold a hotkey, speak, transcribe, optionally polish with an LLM, then type or copy the result into the active app |
 | Ask Anything          | Start a one-shot voice question, transcribe it, send it to the LLM, and show only the final answer in a small panel    |
 | Selected-text editing | Select text in another app, speak an instruction, and let the LLM rewrite, summarize, translate, or fix that selection |
 | Translation           | Use a dedicated shortcut, speak or select text, and send the result to one of your configured target languages         |
@@ -163,13 +174,13 @@ Most desktop dictation tools stop at transcription. OpenTypeless adds the AI rew
 
 | Area              | Highlights                                                                                                                                  |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Voice capture     | Native Fn / Right Alt hotkeys on macOS/Windows, Linux Ctrl defaults, multiple bindings per workflow, hold or toggle mode, floating capsule states, idle auto-hide |
+| Voice capture     | Native Fn / Right Alt hotkeys on macOS/Windows, Linux Ctrl defaults, multiple bindings per workflow, hold or toggle mode, smooth centered microphone waveform with flat silence, floating capsule states, idle auto-hide |
 | AI rewriting      | App-aware writing, local per-app style mappings, polish styles, streaming polish, selected-text context, and custom instructions             |
 | Ask Anything      | One-shot voice question flow: record in the capsule, think, then show a small answer note with copy support                                 |
 | Voice actions     | Deterministic English, Simplified Chinese, and Traditional Chinese routing for editing, translation, Ask, and supported actions              |
-| STT providers     | Cloud STT, Apple Speech on macOS, Deepgram, AssemblyAI, GLM-ASR, OpenAI Whisper, Groq Whisper, SiliconFlow, Volcengine Doubao, custom endpoints |
-| LLM providers     | Cloud LLM or OpenAI-compatible APIs including OpenAI, DeepSeek, Claude via OpenRouter, Gemini, Groq, Qwen, Moonshot, Ollama, and more       |
-| Output            | Keyboard simulation, clipboard paste/copy-only, Windows SendInput, clipboard restore, and output-failure diagnostics                       |
+| STT providers     | Azure Speech fast transcription, Cloud STT, Apple Speech on macOS, Deepgram, AssemblyAI, GLM-ASR, OpenAI Whisper, Groq Whisper, SiliconFlow, Volcengine Doubao, custom endpoints |
+| LLM providers     | Azure OpenAI GPT deployments, Microsoft Foundry Chat Completions / Responses deployments, Cloud LLM, OpenAI, DeepSeek, Claude, Google Gemini, Groq, Qwen, Moonshot, Ollama, and more |
+| Output            | Keyboard simulation, clipboard paste/copy-only, Windows SendInput, clipboard restore, copy-ready capsule when input is unavailable, and output-failure diagnostics                       |
 | Language          | Auto-detect speech, dedicated translation shortcut, switchable target languages, and 20+ translation targets                                |
 | Dictionary        | Custom terms, import/export, and local correction rules for recurring transcription mistakes                                                 |
 | Scenes            | Built-in scenes, local custom scenes, active scene metadata, import/export for reusable writing styles                                      |
@@ -304,6 +315,8 @@ npm run tauri build
 
 The built application will be in `src-tauri/target/release/bundle/`.
 
+For an unsigned Windows x64 installer and local build prerequisites, see the [Windows build playbook](PLAYBOOK.md#windows-x64-local-installer).
+
 ## Configuration
 
 All settings are accessible from the in-app Settings panel:
@@ -316,6 +329,15 @@ All settings are accessible from the in-app Settings panel:
 - **Account / Upgrade** — sign in, check cloud words, manage Pro or Lifetime Starter access
 
 API keys are stored locally in the OS credential vault where available, with a local fallback for unsupported environments. No BYOK keys are sent to OpenTypeless servers — STT/LLM requests go directly to the provider you configure.
+
+### Right Alt and Azure setup
+
+- **Windows recording:** new installations use **Right Alt** in toggle mode: press once to record, then again to stop. Existing explicit shortcuts are preserved. For an existing installation, select **Right Alt** in General → Shortcuts and **Toggle on/off** in Dictation mode, then save. The selection survives restart.
+- **Azure Speech:** in Speech Recognition, choose **Azure Speech**, enter the Speech resource HTTPS endpoint and its API key, and select automatic detection or a recognition language. Audio is sent directly to Azure after recording stops. The resource region must support fast transcription.
+- **Azure text cleanup:** in AI Polish, choose **Azure OpenAI (GPT)** or **Azure / Microsoft Foundry**, enter the resource endpoint or complete Chat Completions / Responses URL, resource key, and **deployment name**. `/openai/responses?api-version=...` selects Responses automatically and preserves the version; Responses does not store a server-side session. Model listing is optional; a catalog model name is not necessarily a deployment name.
+- **Gemini:** the existing Google Gemini option remains available. Foundry routing only works if an actual compatible Gemini deployment is available; this app does not provision deployments or guarantee catalog availability.
+
+See [Azure setup and verification](PLAYBOOK.md#azure-provider-setup) for endpoint examples and limitations, and [SPEC.md](SPEC.md) for the scope of this integration.
 
 ### Cloud Option
 

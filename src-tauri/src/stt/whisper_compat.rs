@@ -314,6 +314,7 @@ mod tests {
                 operation_id: None,
                 managed_audio: None,
                 provider_region: None,
+                provider_endpoint: None,
             })
             .await;
 

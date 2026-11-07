@@ -70,6 +70,39 @@ describe('useTauriEvents', () => {
     vi.clearAllMocks()
   })
 
+  it('clears stale microphone levels when starting Ask or leaving recording', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:state')).toBe(true))
+    for (const state of ['ask_recording', 'transcribing', 'ask_thinking', 'idle']) {
+      useAppStore.getState().setAudioVolume(0.8)
+      act(() => eventListeners.get('pipeline:state')?.({ payload: state }))
+      expect(useAppStore.getState().audioVolume).toBe(0)
+    }
+  })
+
+  it('forwards changing measured microphone volume to the capsule store', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('audio:volume')).toBe(true))
+    act(() => eventListeners.get('audio:volume')?.({ payload: 0.07 }))
+    expect(useAppStore.getState().audioVolume).toBe(0.07)
+    act(() => eventListeners.get('audio:volume')?.({ payload: 0 }))
+    expect(useAppStore.getState().audioVolume).toBe(0)
+  })
+
+  it('retains final output after idle and clears it when another recording starts', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:completed')).toBe(true))
+    act(() =>
+      eventListeners.get('pipeline:completed')?.({
+        payload: { text: 'Clean result', status: 'clipboard_fallback' },
+      }),
+    )
+    act(() => eventListeners.get('pipeline:state')?.({ payload: 'idle' }))
+    expect(useAppStore.getState().pendingOutput?.text).toBe('Clean result')
+    act(() => eventListeners.get('pipeline:state')?.({ payload: 'preparing' }))
+    expect(useAppStore.getState().pendingOutput).toBeNull()
+  })
+
   it('clears hotkey registration errors when the backend reports recovery', async () => {
     render(<HookHarness />)
 

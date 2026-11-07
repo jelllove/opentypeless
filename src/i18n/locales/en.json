@@ -232,6 +232,13 @@
     }
   },
   "capsule": {
+    "copyText": "Copy text",
+    "copiedText": "Copied",
+    "copyFailed": "Copy failed — retry",
+    "dismissResult": "Dismiss result",
+    "microphoneLevel": "Microphone input level",
+    "microphoneLevelValue": "Input level: {{level}}%",
+
     "cancelRecording": "Cancel recording",
     "translationTarget": "Translation target",
     "translationTargets": "Translation targets",
@@ -273,6 +280,11 @@
     }
   },
   "settings": {
+    "azureSpeechEndpoint": "Azure Speech endpoint",
+    "azureSpeechHint": "Use your Speech resource HTTPS endpoint and its key in a fast-transcription-supported region. Audio is transcribed after recording stops. Test sends a short silent sample.",
+    "azureDeploymentName": "Azure deployment name",
+    "azureDeploymentPlaceholder": "Deployment name from Azure / Foundry",
+    "azureLlmHint": "Use your resource endpoint or complete Chat Completions / Responses URL, API key, and deployment name. A /responses URL selects Responses automatically; keep its api-version query. Root endpoints with api-version use deployment-scoped Chat Completions. Responses requests are not stored as server sessions. Model listing is optional; enter the deployment name manually. Gemini via Foundry requires an available compatible deployment.",
     "title": "Settings",
     "general": "General",
     "speechRecognition": "Speech Recognition",
@@ -865,6 +877,7 @@
     "stt": {
       "deepgram": "Deepgram Nova-3",
       "assemblyai": "AssemblyAI",
+      "azureSpeech": "Azure Speech",
       "aliyunQwen3Asr": "Aliyun Qwen3 Realtime ASR",
       "volcengineDoubao": "Volcengine Doubao Realtime ASR",
       "glmAsr": "GLM-ASR (Zhipu)",
@@ -880,6 +893,8 @@
       "deepseek": "DeepSeek",
       "siliconflow": "SiliconFlow",
       "openai": "OpenAI",
+      "azureOpenai": "Azure OpenAI (GPT)",
+      "azureFoundry": "Azure / Microsoft Foundry",
       "gemini": "Google Gemini",
       "moonshot": "Moonshot (Kimi)",
       "doubao": "Doubao (Volcengine)",

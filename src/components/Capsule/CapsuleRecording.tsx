@@ -31,9 +31,10 @@ export function CapsuleRecording() {
         animate={reduced ? undefined : { opacity: [1, 0.5, 1] }}
         transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
       />
-      <Waveform />
+      <div className="flex min-w-0 flex-1 items-center justify-center">
+        <Waveform />
+      </div>
       <TranslateTargetChip />
-      <div className="flex-1" />
       <DurationTimer />
       <button
         onPointerDown={stopPointerPropagation}

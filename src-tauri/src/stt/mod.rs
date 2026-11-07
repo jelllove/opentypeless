@@ -1,6 +1,7 @@
 pub mod aliyun_qwen3_asr;
 pub mod apple_speech;
 pub mod assemblyai;
+pub mod azure_speech;
 pub mod capabilities;
 pub mod cloud;
 pub mod config;
@@ -26,6 +27,8 @@ pub struct SttConfig {
     pub operation_id: Option<String>,
     pub managed_audio: Option<managed_audio::ManagedAudioEncodingConfig>,
     pub provider_region: Option<String>,
+    #[serde(default)]
+    pub provider_endpoint: Option<String>,
 }
 
 impl Default for SttConfig {
@@ -39,6 +42,7 @@ impl Default for SttConfig {
             operation_id: None,
             managed_audio: None,
             provider_region: None,
+            provider_endpoint: None,
         }
     }
 }
@@ -84,6 +88,9 @@ pub fn create_provider(
                 None => Box::new(cloud::CloudSttProvider::new(api_base_url)),
             })
         }
+        azure_speech::PROVIDER => Ok(Box::new(azure_speech::AzureSpeechProvider::with_client(
+            client.unwrap_or_default(),
+        ))),
         "assemblyai" => Ok(Box::new(assemblyai::AssemblyAiProvider::new())),
         "deepgram" => Ok(Box::new(deepgram::DeepgramProvider::new())),
         aliyun_qwen3_asr::ALIYUN_QWEN3_ASR_PROVIDER => {
@@ -155,6 +162,12 @@ mod tests {
     fn creates_apple_speech_builtin_local_provider() {
         let provider = create_provider("apple-speech", None, None).unwrap();
         assert_eq!(provider.name(), "Apple Speech");
+    }
+
+    #[test]
+    fn creates_azure_speech_provider() {
+        let provider = create_provider("azure-speech", None, None).unwrap();
+        assert_eq!(provider.name(), "Azure Speech");
     }
 
     #[test]

@@ -232,6 +232,12 @@
     }
   },
   "capsule": {
+    "copyText": "텍스트 복사",
+    "copiedText": "복사됨",
+    "copyFailed": "복사 실패 — 재시도",
+    "dismissResult": "결과 닫기",
+    "microphoneLevel": "마이크 입력 레벨",
+    "microphoneLevelValue": "입력 레벨: {{level}}%",
     "cancelRecording": "녹음 취소",
     "translationTarget": "번역 대상",
     "translationTargets": "번역 대상 목록",
@@ -273,6 +279,11 @@
     }
   },
   "settings": {
+    "azureSpeechEndpoint": "Azure Speech 엔드포인트",
+    "azureSpeechHint": "빠른 전사를 지원하는 지역의 Speech 리소스 HTTPS 엔드포인트와 키를 입력하세요. 녹음을 중지한 후 전사합니다. 테스트는 짧은 무음 샘플을 전송합니다.",
+    "azureDeploymentName": "Azure 배포 이름",
+    "azureDeploymentPlaceholder": "Azure / Foundry 배포 이름",
+    "azureLlmHint": "리소스 또는 전체 Chat Completions/Responses URL, 키와 배포 이름을 입력하세요. /responses는 Responses를 자동 선택합니다. api-version을 유지하세요. 서버 세션을 저장하지 않습니다. 모델 목록은 선택 사항입니다.",
     "title": "설정",
     "general": "일반",
     "speechRecognition": "음성 인식",
@@ -865,6 +876,7 @@
     "stt": {
       "deepgram": "Deepgram Nova-3",
       "assemblyai": "AssemblyAI",
+      "azureSpeech": "Azure Speech",
       "aliyunQwen3Asr": "Aliyun Qwen3 실시간 ASR",
       "volcengineDoubao": "Volcengine Doubao 실시간 ASR",
       "glmAsr": "GLM-ASR (Zhipu)",
@@ -880,6 +892,8 @@
       "deepseek": "DeepSeek",
       "siliconflow": "SiliconFlow",
       "openai": "OpenAI",
+      "azureOpenai": "Azure OpenAI (GPT)",
+      "azureFoundry": "Azure / Microsoft Foundry",
       "gemini": "Google Gemini",
       "moonshot": "Moonshot (Kimi)",
       "doubao": "Doubao (Volcengine)",

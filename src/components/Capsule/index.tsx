@@ -29,9 +29,12 @@ function getCapsuleShellSize(capsuleState: string) {
       return { width: 36, height: 36 }
     case 'preparing':
       return { width: 180, height: 36 }
+    case 'copy_ready':
+      return { width: 200, height: 36 }
     case 'outputting':
       return { width: 144, height: 36 }
     case 'ask_recording':
+      return { width: 200, height: 36 }
     case 'ask_thinking':
       return { width: 168, height: 36 }
     case 'recording':
@@ -47,6 +50,7 @@ function getCapsuleShellSize(capsuleState: string) {
 export function Capsule() {
   const pipelineState = useAppStore((s) => s.pipelineState)
   const pipelineError = useAppStore((s) => s.pipelineError)
+  const pendingOutput = useAppStore((s) => s.pendingOutput)
   const contextMenuOpen = useAppStore((s) => s.contextMenuOpen)
   const setContextMenuOpen = useAppStore((s) => s.setContextMenuOpen)
   const contextMenuReady = useAppStore((s) => s.contextMenuReady)
@@ -60,8 +64,11 @@ export function Capsule() {
 
   useCapsuleResize()
 
-  const hasError = pipelineError !== null
-  const capsuleState = getCapsuleState(pipelineState, hasError)
+  const showingResult = Boolean(
+    pendingOutput && (pipelineState === 'idle' || pipelineState === 'outputting'),
+  )
+  const hasError = pipelineError !== null && !showingResult
+  const capsuleState = showingResult ? 'copy_ready' : getCapsuleState(pipelineState, hasError)
   const capsuleShellSize = getCapsuleShellSize(capsuleState)
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -166,7 +173,9 @@ export function Capsule() {
             {capsuleState === 'recording' && <CapsuleRecording />}
             {capsuleState === 'transcribing' && <CapsuleProcessing />}
             {capsuleState === 'polishing' && <CapsulePolishing />}
-            {capsuleState === 'outputting' && <CapsuleComplete />}
+            {(capsuleState === 'outputting' || capsuleState === 'copy_ready') && (
+              <CapsuleComplete />
+            )}
             {capsuleState === 'ask_recording' && <CapsuleAskRecording />}
             {capsuleState === 'ask_thinking' && <CapsuleAskThinking />}
             {capsuleState === 'error' && <CapsuleError />}

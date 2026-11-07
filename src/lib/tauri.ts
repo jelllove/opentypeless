@@ -353,6 +353,7 @@ export async function testSttConnection(
   customModel?: string,
   volcengineResourceId?: string,
   providerRegion?: string,
+  azureEndpoint?: string,
 ): Promise<boolean> {
   return invoke('test_stt_connection', {
     apiKey,
@@ -361,6 +362,7 @@ export async function testSttConnection(
     customModel,
     volcengineResourceId,
     providerRegion,
+    azureEndpoint,
   })
 }
 
@@ -381,6 +383,7 @@ export async function benchSttConnection(
   customModel?: string,
   volcengineResourceId?: string,
   providerRegion?: string,
+  azureEndpoint?: string,
 ): Promise<number> {
   return invoke('bench_stt_connection', {
     apiKey,
@@ -389,6 +392,7 @@ export async function benchSttConnection(
     customModel,
     volcengineResourceId,
     providerRegion,
+    azureEndpoint,
   })
 }
 

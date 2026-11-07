@@ -102,6 +102,7 @@ const mockAppStore = {
     stt_custom_model: 'Systran/faster-whisper-large-v3',
     stt_volcengine_resource_id: 'volc.seedasr.sauc.duration',
     stt_aliyun_qwen_region: 'china-mainland' as 'china-mainland' | 'international',
+    stt_azure_endpoint: '',
     recording_limit_mode: 'auto' as 'auto' | 'custom',
     custom_recording_limit_seconds: 600,
     max_recording_seconds: 600,
@@ -167,6 +168,7 @@ describe('SttPane', () => {
       stt_custom_model: 'Systran/faster-whisper-large-v3',
       stt_volcengine_resource_id: 'volc.seedasr.sauc.duration',
       stt_aliyun_qwen_region: 'china-mainland',
+      stt_azure_endpoint: '',
       recording_limit_mode: 'auto',
       custom_recording_limit_seconds: 600,
       max_recording_seconds: 600,
@@ -223,6 +225,36 @@ describe('SttPane', () => {
   })
 
   describe('Provider selection', () => {
+    it('offers Azure Speech and forwards its endpoint when testing', async () => {
+      mockAppStore.config.stt_provider = 'azure-speech'
+      mockAppStore.config.stt_api_key = 'azure-key'
+      mockAppStore.config.stt_azure_endpoint = 'https://speech.cognitiveservices.azure.com'
+      vi.mocked(tauri.benchSttConnection).mockResolvedValue(150)
+      render(<SttPane />)
+      expect(screen.getByRole('option', { name: 'providers.stt.azureSpeech' })).toHaveValue(
+        'azure-speech',
+      )
+      const endpoint = screen.getByRole('textbox', { name: 'settings.azureSpeechEndpoint' })
+      fireEvent.change(endpoint, {
+        target: { value: 'https://other-speech.cognitiveservices.azure.com' },
+      })
+      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
+        stt_azure_endpoint: 'https://other-speech.cognitiveservices.azure.com',
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Test' }))
+      await waitFor(() =>
+        expect(tauri.benchSttConnection).toHaveBeenCalledWith(
+          'azure-key',
+          'azure-speech',
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          'https://speech.cognitiveservices.azure.com',
+        ),
+      )
+    })
+
     it('renders provider dropdown with current value', () => {
       render(<SttPane />)
       const selects = screen.getAllByRole('combobox')

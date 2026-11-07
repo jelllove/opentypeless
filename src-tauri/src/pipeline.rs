@@ -341,7 +341,14 @@ fn streaming_insert_strategy_for_config(
     accessibility_trusted: bool,
     keyboard_available: bool,
 ) -> Option<output::InsertionStrategy> {
-    if !config.streaming_insert_enabled || has_selected_text || !accessibility_trusted {
+    // Responses can fail after emitting text deltas. Keep preview streaming,
+    // but insert into the target app only after response.completed.
+    if llm::protocol::detect_api_kind(&config.llm_provider, &config.llm_base_url)
+        == llm::protocol::LlmApiKind::OpenAiResponses
+        || !config.streaming_insert_enabled
+        || has_selected_text
+        || !accessibility_trusted
+    {
         return None;
     }
 
@@ -562,7 +569,10 @@ async fn run_streaming_insert_worker(
             continue;
         }
 
-        if !context_detector.target_still_matches(&expected_target_guard) {
+        if !context_detector.target_still_matches(&expected_target_guard)
+            || output::input_target::focused_input_target().await
+                == output::input_target::InputTarget::NotEditable
+        {
             report.failed = true;
             report.target_lost = true;
             report.error_message = Some(format!(
@@ -1327,6 +1337,8 @@ impl PipelineHandle {
             provider_region: (config_data.stt_provider
                 == stt::aliyun_qwen3_asr::ALIYUN_QWEN3_ASR_PROVIDER)
                 .then(|| config_data.stt_aliyun_qwen_region.clone()),
+            provider_endpoint: (config_data.stt_provider == stt::azure_speech::PROVIDER)
+                .then(|| config_data.stt_azure_endpoint.clone()),
         };
         let managed_cloud_session_token =
             (config_data.stt_provider == "cloud").then(|| stt_config.api_key.clone());
@@ -2002,6 +2014,17 @@ impl PipelineHandle {
             })
             .await;
         let final_text = polish_outcome.final_text;
+        if !self.abort_flag.load(Ordering::SeqCst) && !final_text.trim().is_empty() {
+            let _ = self.app_handle.emit(
+                "pipeline:completed",
+                serde_json::json!({
+                    "text": final_text,
+                    "status": polish_outcome.history_output_status.as_deref().unwrap_or_else(|| {
+                        if polish_outcome.voice_execution.as_ref().is_some_and(|execution| execution.status == crate::voice_intent::executor::VoiceExecutionStatus::Completed) { "inserted" } else { "failed" }
+                    })
+                }),
+            );
+        }
         let llm_elapsed = polish_outcome.llm_elapsed;
 
         // ── Phase 3: Timing, history, cleanup ──────────────────────────
@@ -2246,8 +2269,14 @@ impl PipelineHandle {
         };
         let provider = llm::create_provider(&config.llm_provider, Some(self.shared_client.clone()));
 
-        let streaming_strategy = provider_plan
-            .allow_streaming
+        let input_can_receive = if provider_plan.allow_streaming && config.streaming_insert_enabled
+        {
+            output::input_target::focused_input_target().await
+                != output::input_target::InputTarget::NotEditable
+        } else {
+            true
+        };
+        let streaming_strategy = (provider_plan.allow_streaming && input_can_receive)
             .then(|| streaming_insert_strategy_for_runtime(config, selected_text.as_deref()))
             .flatten();
         let mut streaming_worker = streaming_strategy.map(|strategy| {
@@ -2876,6 +2905,22 @@ impl PipelineHandle {
             ),
             retry_count: 0,
         });
+        let input_warning = if target_warning.is_none()
+            && strategy_uses_automated_input(configured_strategy)
+            && output::input_target::focused_input_target().await
+                == output::input_target::InputTarget::NotEditable
+        {
+            Some(crate::error::UserError {
+                code: "output_no_input_target".into(),
+                details: Some(
+                    "No editable input is focused; the text is available to copy.".into(),
+                ),
+                retry_count: 0,
+            })
+        } else {
+            None
+        };
+        let target_warning = target_warning.or(input_warning);
         let requested_strategy = if target_warning.is_some() {
             output::InsertionStrategy::ClipboardCopyOnly
         } else {
@@ -3031,9 +3076,13 @@ impl PipelineHandle {
                 let base = crate::api_base_url();
                 Some((format!("{}/api/proxy/llm", base), true))
             } else {
-                crate::llm::protocol::chat_endpoint(&config.llm_provider, &config.llm_base_url)
-                    .ok()
-                    .map(|endpoint| (endpoint, false))
+                crate::llm::protocol::chat_endpoint_for_model(
+                    &config.llm_provider,
+                    &config.llm_base_url,
+                    &config.llm_model,
+                )
+                .ok()
+                .map(|endpoint| (endpoint, false))
             }
         } else {
             None
@@ -3323,6 +3372,22 @@ mod tests {
     fn streaming_insert_strategy_defaults_to_disabled() {
         let config = storage::AppConfig::default();
 
+        assert_eq!(
+            streaming_insert_strategy_for_config(&config, false, true, true),
+            None
+        );
+    }
+
+    #[test]
+    fn responses_waits_for_completed_text_before_target_app_insertion() {
+        let config = storage::AppConfig {
+            streaming_insert_enabled: true,
+            llm_provider: "azure-openai".into(),
+            llm_base_url:
+                "https://example.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
+                    .into(),
+            ..Default::default()
+        };
         assert_eq!(
             streaming_insert_strategy_for_config(&config, false, true, true),
             None

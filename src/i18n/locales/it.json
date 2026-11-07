@@ -232,6 +232,12 @@
     }
   },
   "capsule": {
+    "copyText": "Copia testo",
+    "copiedText": "Copiato",
+    "copyFailed": "Copia non riuscita — riprova",
+    "dismissResult": "Chiudi risultato",
+    "microphoneLevel": "Livello del microfono",
+    "microphoneLevelValue": "Livello di ingresso: {{level}}%",
     "cancelRecording": "Annulla registrazione",
     "translationTarget": "Lingua di destinazione",
     "translationTargets": "Lingue di destinazione",
@@ -273,6 +279,11 @@
     }
   },
   "settings": {
+    "azureSpeechEndpoint": "Endpoint Azure Speech",
+    "azureSpeechHint": "Usa endpoint HTTPS e chiave della risorsa Speech in una regione con trascrizione rapida. L’audio viene trascritto dopo l’arresto della registrazione. Il test invia un breve campione silenzioso.",
+    "azureDeploymentName": "Nome della distribuzione Azure",
+    "azureDeploymentPlaceholder": "Nome della distribuzione Azure / Foundry",
+    "azureLlmHint": "Usa endpoint o URL completa Chat Completions/Responses, chiave e nome della distribuzione. /responses seleziona Responses; conserva api-version. Le sessioni non vengono salvate. L’elenco dei modelli è facoltativo.",
     "title": "Impostazioni",
     "general": "Generali",
     "speechRecognition": "Riconoscimento vocale",
@@ -865,6 +876,7 @@
     "stt": {
       "deepgram": "Deepgram Nova-3",
       "assemblyai": "AssemblyAI",
+      "azureSpeech": "Azure Speech",
       "aliyunQwen3Asr": "Aliyun Qwen3 ASR in tempo reale",
       "volcengineDoubao": "Volcengine Doubao ASR in tempo reale",
       "glmAsr": "GLM-ASR (Zhipu)",
@@ -880,6 +892,8 @@
       "deepseek": "DeepSeek",
       "siliconflow": "SiliconFlow",
       "openai": "OpenAI",
+      "azureOpenai": "Azure OpenAI (GPT)",
+      "azureFoundry": "Azure / Microsoft Foundry",
       "gemini": "Google Gemini",
       "moonshot": "Moonshot (Kimi)",
       "doubao": "Doubao (Volcengine)",

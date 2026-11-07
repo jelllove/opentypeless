@@ -6,6 +6,8 @@ use crate::error::AppError;
 pub fn finalize_timeout(provider: &str, streaming_timeout: Duration) -> Duration {
     if provider == "cloud" {
         crate::cloud_request::STT_MAX_TIMEOUT + Duration::from_secs(15)
+    } else if provider == crate::stt::azure_speech::PROVIDER {
+        crate::stt::azure_speech::FINALIZE_TIMEOUT
     } else if provider == crate::stt::config::CUSTOM_WHISPER_PROVIDER
         || crate::stt::config::get_whisper_config(provider).is_some()
     {
@@ -85,7 +87,12 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn file_upload_ask_does_not_stop_after_twelve_seconds() {
-        for provider in ["groq-whisper", "openai-whisper", "custom-whisper"] {
+        for provider in [
+            "groq-whisper",
+            "openai-whisper",
+            "custom-whisper",
+            "azure-speech",
+        ] {
             let done = Arc::new(Notify::new());
             let worker_done = done.clone();
             let worker = tokio::spawn(async move {

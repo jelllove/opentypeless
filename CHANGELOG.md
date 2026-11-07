@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-11-07
+
+### Added
+- Azure Speech fast transcription with resource endpoint configuration and secure BYOK credentials.
+- Azure OpenAI and Microsoft Foundry Chat Completions and Responses integrations, including versioned endpoints and deployment aliases.
+- Persistent copy-ready capsule when text cannot be inserted, plus an eight-second copy shortcut after successful insertion.
+- Local Windows focused-input capability detection without reading field contents.
+
+### Changed
+- Windows dictation defaults to Right Alt toggle recording; explicitly configured shortcuts remain unchanged.
+- Recording uses a smooth centered, tapered microphone waveform with flat silence and reduced-motion support.
+- This fork publishes a Windows x64 unsigned installer with checksums; updates are installed manually from this fork's Releases.
+
+### Fixed
+- Saved Right Alt bindings no longer migrate back to Ctrl shortcuts.
+- Azure connection tests no longer use a one-token limit that caused HTTP 400 on valid deployments.
+- Responses streams require successful completion before target-app insertion and preserve split UTF-8 characters.
+- Ask recording now reports microphone levels through the shared capsule.
+
 ## [1.1.48] - 2026-07-08
 
 ### Added

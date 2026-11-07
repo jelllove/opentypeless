@@ -232,6 +232,12 @@
     }
   },
   "capsule": {
+    "copyText": "Copier le texte",
+    "copiedText": "Copié",
+    "copyFailed": "Échec — réessayer",
+    "dismissResult": "Fermer le résultat",
+    "microphoneLevel": "Niveau du microphone",
+    "microphoneLevelValue": "Niveau d’entrée : {{level}}%",
     "cancelRecording": "Annuler l'enregistrement",
     "translationTarget": "Langue cible",
     "translationTargets": "Langues cibles",
@@ -273,6 +279,11 @@
     }
   },
   "settings": {
+    "azureSpeechEndpoint": "Point de terminaison Azure Speech",
+    "azureSpeechHint": "Utilisez le point de terminaison HTTPS et la clé de la ressource Speech dans une région prenant en charge la transcription rapide. La transcription suit l’arrêt de l’enregistrement. Le test envoie un court silence.",
+    "azureDeploymentName": "Nom du déploiement Azure",
+    "azureDeploymentPlaceholder": "Nom du déploiement Azure / Foundry",
+    "azureLlmHint": "Utilisez le point de terminaison ou l’URL complète Chat Completions/Responses, la clé et le nom du déploiement. /responses choisit Responses ; conservez api-version. Les sessions ne sont pas stockées. La liste des modèles est facultative.",
     "title": "Paramètres",
     "general": "Général",
     "speechRecognition": "Reconnaissance vocale",
@@ -865,6 +876,7 @@
     "stt": {
       "deepgram": "Deepgram Nova-3",
       "assemblyai": "AssemblyAI",
+      "azureSpeech": "Azure Speech",
       "aliyunQwen3Asr": "Aliyun Qwen3 ASR en temps réel",
       "volcengineDoubao": "Volcengine Doubao ASR en temps réel",
       "glmAsr": "GLM-ASR (Zhipu)",
@@ -880,6 +892,8 @@
       "deepseek": "DeepSeek",
       "siliconflow": "SiliconFlow",
       "openai": "OpenAI",
+      "azureOpenai": "Azure OpenAI (GPT)",
+      "azureFoundry": "Azure / Microsoft Foundry",
       "gemini": "Google Gemini",
       "moonshot": "Moonshot (Kimi)",
       "doubao": "Doubao (Volcengine)",

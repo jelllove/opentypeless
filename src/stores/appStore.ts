@@ -16,6 +16,7 @@ export type VoiceMode = 'dictate' | 'ask' | 'translate'
 export type SttProvider =
   | 'deepgram'
   | 'assemblyai'
+  | 'azure-speech'
   | 'aliyun-qwen3-asr'
   | 'volcengine-doubao'
   | 'glm-asr'
@@ -32,6 +33,8 @@ export type LlmProvider =
   | 'deepseek'
   | 'siliconflow'
   | 'openai'
+  | 'azure-openai'
+  | 'azure-foundry'
   | 'gemini'
   | 'moonshot'
   | 'doubao'
@@ -128,6 +131,11 @@ export interface ContextProfileSummary {
   browserTarget?: BrowserTarget | null
 }
 
+export interface PendingOutput {
+  text: string
+  status: string
+}
+
 export interface InsertResult {
   status: InsertStatus
   strategyUsed: InsertionStrategy
@@ -197,6 +205,7 @@ export interface AppConfig {
   stt_custom_model: string
   stt_volcengine_resource_id: string
   stt_aliyun_qwen_region: AliyunQwenRegion
+  stt_azure_endpoint: string
   stt_language: string
   llm_provider: LlmProvider
   llm_api_key: string
@@ -274,6 +283,8 @@ interface AppState {
   setRecordingDeadline: (deadline: RecordingDeadlineSnapshot | null) => void
   targetApp: string
   setTargetApp: (app: string) => void
+  pendingOutput: PendingOutput | null
+  setPendingOutput: (output: PendingOutput | null) => void
   lastInsertResult: InsertResult | null
   setLastInsertResult: (result: InsertResult | null) => void
   lastContext: ContextProfileSummary | null
@@ -360,11 +371,12 @@ export const isWindowsPlatform = () =>
 
 function defaultDictationHotkey(): string {
   if (isMacPlatform()) return 'Fn'
+  if (isWindowsPlatform()) return 'RightAlt'
   return 'Ctrl+/'
 }
 
 function defaultDictationHotkeyMode(): HotkeyMode {
-  return isMacPlatform() ? 'toggle' : 'hold'
+  return isMacPlatform() || isWindowsPlatform() ? 'toggle' : 'hold'
 }
 
 function defaultAskHotkey(): string {
@@ -729,6 +741,7 @@ const defaultConfig: AppConfig = {
   stt_custom_model: 'Systran/faster-whisper-large-v3',
   stt_volcengine_resource_id: 'volc.seedasr.sauc.duration',
   stt_aliyun_qwen_region: 'china-mainland',
+  stt_azure_endpoint: '',
   stt_language: 'multi',
   llm_provider: 'openrouter',
   llm_api_key: '',
@@ -811,6 +824,8 @@ export const useAppStore = create<AppState>((set) => ({
   setRecordingDeadline: (recordingDeadline) => set({ recordingDeadline }),
   targetApp: '',
   setTargetApp: (targetApp) => set({ targetApp }),
+  pendingOutput: null,
+  setPendingOutput: (pendingOutput) => set({ pendingOutput }),
   lastInsertResult: null,
   setLastInsertResult: (lastInsertResult) => set({ lastInsertResult }),
   lastContext: null,
@@ -875,6 +890,8 @@ export const useAppStore = create<AppState>((set) => ({
 
   resetRecording: () =>
     set({
+      pendingOutput: null,
+      lastInsertResult: null,
       audioVolume: 0,
       partialTranscript: '',
       finalTranscript: '',

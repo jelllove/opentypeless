@@ -338,6 +338,7 @@ pub struct AppConfig {
     pub stt_custom_model: String,
     pub stt_volcengine_resource_id: String,
     pub stt_aliyun_qwen_region: String,
+    pub stt_azure_endpoint: String,
     pub llm_provider: String,
     pub llm_api_key: String,
     pub llm_model: String,
@@ -395,6 +396,7 @@ impl Default for AppConfig {
                 .to_string(),
             stt_aliyun_qwen_region:
                 crate::stt::aliyun_qwen3_asr::ALIYUN_QWEN3_ASR_REGION_CHINA_MAINLAND.to_string(),
+            stt_azure_endpoint: String::new(),
             llm_provider: "openrouter".to_string(),
             llm_api_key: String::new(),
             llm_model: "google/gemini-2.5-flash".to_string(),
@@ -458,11 +460,6 @@ impl AppConfig {
             self.hotkey = "Fn".to_string();
             self.hotkey_mode = "toggle".to_string();
         }
-        #[cfg(target_os = "windows")]
-        if self.hotkey == "RightAlt" && self.hotkey_mode == "toggle" {
-            self.hotkey = "Ctrl+/".to_string();
-            self.hotkey_mode = "hold".to_string();
-        }
         #[cfg(target_os = "macos")]
         if self.ask_hotkey == "Alt+Shift+/"
             || self.ask_hotkey == "Option+Shift+/"
@@ -508,13 +505,6 @@ impl AppConfig {
     fn migrate_platform_typed_hotkeys(&mut self) {
         #[cfg(target_os = "windows")]
         {
-            if self.hotkeys.dictation.to_hotkey_string().as_deref() == Some("RightAlt") {
-                if let Some(binding) = ShortcutBinding::from_hotkey("Ctrl+/") {
-                    self.hotkeys.dictation = binding.clone();
-                    self.hotkeys.dictation_bindings = vec![binding];
-                }
-                self.hotkeys.dictation_mode = "hold".to_string();
-            }
             if self
                 .hotkeys
                 .ask
@@ -724,18 +714,22 @@ fn default_dictation_hotkey() -> &'static str {
     {
         "Fn"
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    {
+        "RightAlt"
+    }
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
     {
         "Ctrl+/"
     }
 }
 
 fn default_dictation_hotkey_mode() -> &'static str {
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     {
         "toggle"
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
     {
         "hold"
     }
@@ -3078,13 +3072,13 @@ mod tests {
 
     #[cfg(target_os = "windows")]
     #[test]
-    fn app_config_new_install_keeps_ctrl_slash_on_windows() {
+    fn app_config_new_install_uses_right_alt_toggle_on_windows() {
         let config = AppConfig::new_install_default();
-        assert_eq!(config.hotkey, "Ctrl+/");
-        assert_eq!(config.hotkeys.dictation.primary, "/");
-        assert_eq!(config.hotkeys.dictation.modifiers, vec!["Ctrl".to_string()]);
-        assert_eq!(config.hotkey_mode, "hold");
-        assert_eq!(config.hotkeys.dictation_mode, "hold");
+        assert_eq!(config.hotkey, "RightAlt");
+        assert_eq!(config.hotkeys.dictation.primary, "RightAlt");
+        assert!(config.hotkeys.dictation.modifiers.is_empty());
+        assert_eq!(config.hotkey_mode, "toggle");
+        assert_eq!(config.hotkeys.dictation_mode, "toggle");
         assert_eq!(config.ask_hotkey, "Ctrl+.");
         assert_eq!(
             config
@@ -3102,6 +3096,48 @@ mod tests {
                 .and_then(ShortcutBinding::to_hotkey_string),
             Some("Ctrl+Shift+/".to_string())
         );
+    }
+
+    #[test]
+    fn azure_provider_configuration_survives_stored_value_round_trip() {
+        let config = AppConfig {
+            stt_provider: "azure-speech".into(),
+            stt_azure_endpoint: "https://speech.cognitiveservices.azure.com".into(),
+            llm_provider: "azure-openai".into(),
+            llm_base_url: "https://test.openai.azure.com/openai/v1".into(),
+            llm_model: "my-deployment".into(),
+            ..Default::default()
+        };
+        let loaded = AppConfig::from_stored_value(serde_json::to_value(config).unwrap()).unwrap();
+        assert_eq!(
+            loaded.stt_azure_endpoint,
+            "https://speech.cognitiveservices.azure.com"
+        );
+        assert_eq!(loaded.stt_provider, "azure-speech");
+        assert_eq!(loaded.llm_provider, "azure-openai");
+        assert_eq!(loaded.llm_model, "my-deployment");
+        assert_eq!(loaded.max_recording_seconds, 600);
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn right_alt_toggle_survives_legacy_and_typed_config_round_trips() {
+        for value in [
+            serde_json::json!({"hotkey": "RightAlt", "hotkey_mode": "toggle"}),
+            serde_json::json!({"hotkeys": {
+                "dictation": {"primary": "RightAlt", "modifiers": []},
+                "dictationBindings": [{"primary": "RightAlt", "modifiers": []}],
+                "dictationMode": "toggle"
+            }}),
+        ] {
+            let config = AppConfig::from_stored_value(value).unwrap();
+            assert_eq!(config.hotkey, "RightAlt");
+            assert_eq!(config.hotkey_mode, "toggle");
+            let reloaded =
+                AppConfig::from_stored_value(serde_json::to_value(config).unwrap()).unwrap();
+            assert_eq!(reloaded.hotkey, "RightAlt");
+            assert_eq!(reloaded.hotkey_mode, "toggle");
+        }
     }
 
     #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]

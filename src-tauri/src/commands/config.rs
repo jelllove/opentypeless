@@ -162,6 +162,7 @@ fn provider_connection_config_changed(
     next: &storage::AppConfig,
 ) -> bool {
     previous.stt_provider != next.stt_provider
+        || previous.stt_azure_endpoint != next.stt_azure_endpoint
         || previous.stt_custom_base_url != next.stt_custom_base_url
         || previous.llm_provider != next.llm_provider
         || previous.llm_base_url != next.llm_base_url
@@ -580,6 +581,10 @@ mod tests {
 
         let mut next = previous.clone();
         next.stt_custom_base_url = "http://localhost:9000/v1".to_string();
+        assert!(provider_connection_config_changed(&previous, &next));
+
+        let mut next = previous.clone();
+        next.stt_azure_endpoint = "https://speech.cognitiveservices.azure.com".into();
         assert!(provider_connection_config_changed(&previous, &next));
     }
 

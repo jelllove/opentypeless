@@ -9,6 +9,7 @@ const ANTHROPIC_VERSION: &str = "2023-06-01";
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LlmApiKind {
     OpenAiCompatible,
+    OpenAiResponses,
     AnthropicMessages,
 }
 
@@ -21,6 +22,9 @@ pub struct StreamEvent {
 }
 
 pub fn detect_api_kind(provider: &str, base_url: &str) -> LlmApiKind {
+    if super::azure::is_provider(provider) && super::azure::uses_responses(base_url) {
+        return LlmApiKind::OpenAiResponses;
+    }
     let provider = provider.trim().to_ascii_lowercase();
     let host = url::Url::parse(base_url.trim())
         .ok()
@@ -73,6 +77,9 @@ fn anthropic_api_root(path: &str) -> String {
 }
 
 pub fn chat_endpoint(provider: &str, base_url: &str) -> Result<String, String> {
+    if super::azure::is_provider(provider) {
+        return super::azure::endpoint(base_url, false);
+    }
     let kind = detect_api_kind(provider, base_url);
     let mut url = parse_http_url(base_url)?;
     match kind {
@@ -80,7 +87,7 @@ pub fn chat_endpoint(provider: &str, base_url: &str) -> Result<String, String> {
             let root = anthropic_api_root(url.path());
             url.set_path(&format!("{root}/messages"));
         }
-        LlmApiKind::OpenAiCompatible => {
+        LlmApiKind::OpenAiResponses | LlmApiKind::OpenAiCompatible => {
             let path = url.path().trim_end_matches('/');
             if !path.ends_with("/chat/completions") {
                 url.set_path(&format!("{path}/chat/completions"));
@@ -90,7 +97,21 @@ pub fn chat_endpoint(provider: &str, base_url: &str) -> Result<String, String> {
     Ok(url.to_string())
 }
 
+pub fn chat_endpoint_for_model(
+    provider: &str,
+    base_url: &str,
+    model: &str,
+) -> Result<String, String> {
+    if super::azure::is_provider(provider) {
+        return super::azure::endpoint_for_model(base_url, model);
+    }
+    chat_endpoint(provider, base_url)
+}
+
 pub fn models_endpoint(provider: &str, base_url: &str) -> Result<String, String> {
+    if super::azure::is_provider(provider) {
+        return super::azure::endpoint(base_url, true);
+    }
     let kind = detect_api_kind(provider, base_url);
     let mut url = parse_http_url(base_url)?;
     match kind {
@@ -98,7 +119,7 @@ pub fn models_endpoint(provider: &str, base_url: &str) -> Result<String, String>
             let root = anthropic_api_root(url.path());
             url.set_path(&format!("{root}/models"));
         }
-        LlmApiKind::OpenAiCompatible => {
+        LlmApiKind::OpenAiResponses | LlmApiKind::OpenAiCompatible => {
             replace_or_append_path(&mut url, "/chat/completions", "/models");
         }
     }
@@ -126,7 +147,8 @@ fn is_reasoning_model_without_sampling_controls(model: &str) -> bool {
 }
 
 pub fn request_timeout(provider: &str, base_url: &str, model: &str) -> Duration {
-    if detect_api_kind(provider, base_url) == LlmApiKind::AnthropicMessages
+    if super::azure::is_provider(provider)
+        || detect_api_kind(provider, base_url) == LlmApiKind::AnthropicMessages
         || is_reasoning_model_without_sampling_controls(model)
     {
         Duration::from_secs(60)
@@ -157,6 +179,9 @@ pub fn build_chat_body(
     stream: bool,
 ) -> Value {
     match detect_api_kind(provider, base_url) {
+        LlmApiKind::OpenAiResponses => {
+            super::responses::request_body(model, messages, max_tokens, stream)
+        }
         LlmApiKind::AnthropicMessages => {
             let mut system_parts = Vec::new();
             let mut anthropic_messages = Vec::new();
@@ -194,7 +219,15 @@ pub fn build_chat_body(
                 "stream": stream
             });
             let object = body.as_object_mut().unwrap();
-            if is_direct_openai(provider, base_url) {
+            if provider.trim().eq_ignore_ascii_case("azure-openai") {
+                // Deployment aliases do not reveal GPT capabilities. Omit optional
+                // sampling controls so reasoning deployments work with any alias.
+                object.insert("max_completion_tokens".to_string(), json!(max_tokens));
+            } else if super::azure::is_provider(provider)
+                && is_reasoning_model_without_sampling_controls(model)
+            {
+                object.insert("max_completion_tokens".to_string(), json!(max_tokens));
+            } else if is_direct_openai(provider, base_url) {
                 object.insert("max_completion_tokens".to_string(), json!(max_tokens));
                 if !is_reasoning_model_without_sampling_controls(model) {
                     object.insert("temperature".to_string(), json!(temperature));
@@ -215,11 +248,14 @@ pub fn apply_auth_headers(
     api_key: &str,
 ) -> RequestBuilder {
     let api_key = api_key.trim();
+    if super::azure::is_provider(provider) {
+        return request.header("api-key", api_key);
+    }
     match detect_api_kind(provider, base_url) {
         LlmApiKind::AnthropicMessages => request
             .header("x-api-key", api_key)
             .header("anthropic-version", ANTHROPIC_VERSION),
-        LlmApiKind::OpenAiCompatible => {
+        LlmApiKind::OpenAiResponses | LlmApiKind::OpenAiCompatible => {
             if super::provider_requires_api_key(provider) || !api_key.is_empty() {
                 request.header("Authorization", format!("Bearer {api_key}"))
             } else {
@@ -231,6 +267,7 @@ pub fn apply_auth_headers(
 
 pub fn response_text(kind: LlmApiKind, body: &Value) -> String {
     match kind {
+        LlmApiKind::OpenAiResponses => super::responses::text(body),
         LlmApiKind::AnthropicMessages => body["content"]
             .as_array()
             .into_iter()
@@ -251,8 +288,17 @@ pub fn response_text(kind: LlmApiKind, body: &Value) -> String {
     }
 }
 
+pub fn response_error(kind: LlmApiKind, body: &Value) -> Option<String> {
+    if kind == LlmApiKind::OpenAiResponses {
+        super::responses::response_error(body)
+    } else {
+        None
+    }
+}
+
 pub fn parse_stream_event(kind: LlmApiKind, body: &Value) -> StreamEvent {
     match kind {
+        LlmApiKind::OpenAiResponses => super::responses::stream_event(body),
         LlmApiKind::AnthropicMessages => {
             if body["type"].as_str() == Some("error") {
                 return StreamEvent {
@@ -345,6 +391,140 @@ mod tests {
         assert_eq!(body["messages"].as_array().unwrap().len(), 1);
         assert_eq!(body["max_tokens"], 256);
         assert!(body.get("max_completion_tokens").is_none());
+    }
+
+    #[test]
+    fn azure_responses_body_uses_stateless_input_and_output_token_limit() {
+        let base =
+            "https://example.openai.azure.com/openai/responses?api-version=2025-04-01-preview";
+        let body = build_chat_body(
+            "azure-openai",
+            base,
+            "gpt-6.1-sol",
+            messages(),
+            16384,
+            0.3,
+            true,
+        );
+        assert_eq!(body["model"], "gpt-6.1-sol");
+        assert_eq!(body["max_output_tokens"], 16384);
+        assert_eq!(body["input"][0]["role"], "system");
+        assert_eq!(body["store"], false);
+        assert_eq!(body["stream"], true);
+        for forbidden in [
+            "messages",
+            "max_tokens",
+            "max_completion_tokens",
+            "temperature",
+            "previous_response_id",
+        ] {
+            assert!(body.get(forbidden).is_none());
+        }
+        let kind = detect_api_kind("azure-openai", base);
+        assert_eq!(
+            response_text(
+                kind,
+                &json!({"output": [{"type": "message", "content": [{"type": "output_text", "text": "Hello"}]}]})
+            ),
+            "Hello"
+        );
+        assert_eq!(
+            parse_stream_event(
+                kind,
+                &json!({"type": "response.output_text.delta", "delta": "Hello"})
+            )
+            .text
+            .as_deref(),
+            Some("Hello")
+        );
+        assert!(parse_stream_event(kind, &json!({"type": "response.completed"})).done);
+        assert!(parse_stream_event(kind, &json!({"type": "response.failed", "response": {"error": {"message": "Deployment unavailable"}}})).error.is_some());
+        assert!(parse_stream_event(kind, &json!({"type": "response.incomplete", "response": {"incomplete_details": {"reason": "max_output_tokens"}}})).error.is_some());
+    }
+
+    #[test]
+    fn azure_root_endpoints_use_v1_chat_and_model_routes() {
+        for (provider, root) in [
+            ("azure-openai", "https://example.openai.azure.com"),
+            ("azure-foundry", "https://example.services.ai.azure.com"),
+        ] {
+            assert_eq!(
+                chat_endpoint(provider, root).unwrap(),
+                format!("{root}/openai/v1/chat/completions")
+            );
+            assert_eq!(
+                models_endpoint(provider, root).unwrap(),
+                format!("{root}/openai/v1/models")
+            );
+            assert!(chat_endpoint(provider, "http://example.com").is_err());
+        }
+    }
+
+    #[test]
+    fn azure_auth_and_reasoning_requests_support_custom_deployment_names() {
+        let base = "https://example.openai.azure.com/openai/v1";
+        let request = apply_auth_headers(
+            reqwest::Client::new().post(base),
+            "azure-openai",
+            base,
+            " azure-key ",
+        )
+        .build()
+        .unwrap();
+        assert_eq!(request.headers()["api-key"], "azure-key");
+        assert!(request.headers().get("Authorization").is_none());
+        let body = build_chat_body(
+            "azure-openai",
+            base,
+            "my-reasoning-deployment",
+            messages(),
+            4096,
+            0.3,
+            true,
+        );
+        assert_eq!(body["model"], "my-reasoning-deployment");
+        assert_eq!(body["max_completion_tokens"], 4096);
+        assert!(body.get("temperature").is_none());
+        assert!(body.get("max_tokens").is_none());
+    }
+
+    #[test]
+    fn azure_foundry_preserves_compatible_models_and_streaming_chunks() {
+        let base = "https://test.services.ai.azure.com/openai/v1";
+        let body = build_chat_body(
+            "azure-foundry",
+            base,
+            "my-model-deployment",
+            messages(),
+            256,
+            0.3,
+            true,
+        );
+        assert_eq!(body["model"], "my-model-deployment");
+        assert_eq!(body["max_tokens"], 256);
+        assert_eq!(body["stream"], true);
+        let kind = detect_api_kind("azure-foundry", base);
+        let event = parse_stream_event(
+            kind,
+            &json!({"choices": [{"delta": {"content": "Clean text"}}]}),
+        );
+        assert_eq!(event.text.as_deref(), Some("Clean text"));
+        assert_eq!(
+            response_text(
+                kind,
+                &json!({"choices": [{"message": {"content": "Clean text"}}]})
+            ),
+            "Clean text"
+        );
+        let request = apply_auth_headers(
+            reqwest::Client::new().get(models_endpoint("azure-foundry", base).unwrap()),
+            "azure-foundry",
+            base,
+            "key",
+        )
+        .build()
+        .unwrap();
+        assert_eq!(request.headers()["api-key"], "key");
     }
 
     #[test]

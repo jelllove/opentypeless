@@ -232,6 +232,12 @@
     }
   },
   "capsule": {
+    "copyText": "テキストをコピー",
+    "copiedText": "コピー済み",
+    "copyFailed": "コピー失敗・再試行",
+    "dismissResult": "結果を閉じる",
+    "microphoneLevel": "マイク入力レベル",
+    "microphoneLevelValue": "入力レベル：{{level}}%",
     "cancelRecording": "録音をキャンセル",
     "translationTarget": "翻訳先",
     "translationTargets": "翻訳先一覧",
@@ -273,6 +279,12 @@
     }
   },
   "settings": {
+    "azureSpeechEndpoint": "Azure Speech エンドポイント",
+    "azureSpeechHint": "高速文字起こし対応リージョンの Speech リソースの HTTPS エンドポイントとキーを指定します。録音停止後に文字起こしします。テストでは短い無音を送信します。",
+    "azureDeploymentName": "Azure デプロイ名",
+    "azureDeploymentPlaceholder": "Azure / Foundry のデプロイ名",
+    "azureLlmHint": "リソースまたは完全な Chat Completions/Responses URL、キー、デプロイ名を指定します。/responses は Responses を自動選択します。api-version を保持してください。サーバーセッションは保存しません。モデル一覧は任意です。",
+
     "title": "設定",
     "general": "一般",
     "speechRecognition": "音声認識",
@@ -865,6 +877,7 @@
     "stt": {
       "deepgram": "Deepgram Nova-3",
       "assemblyai": "AssemblyAI",
+      "azureSpeech": "Azure Speech",
       "aliyunQwen3Asr": "Aliyun Qwen3 リアルタイム ASR",
       "volcengineDoubao": "Volcengine Doubao リアルタイム ASR",
       "glmAsr": "GLM-ASR (Zhipu)",
@@ -880,6 +893,8 @@
       "deepseek": "DeepSeek",
       "siliconflow": "SiliconFlow",
       "openai": "OpenAI",
+      "azureOpenai": "Azure OpenAI (GPT)",
+      "azureFoundry": "Azure / Microsoft Foundry",
       "gemini": "Google Gemini",
       "moonshot": "Moonshot (Kimi)",
       "doubao": "Doubao (Volcengine)",

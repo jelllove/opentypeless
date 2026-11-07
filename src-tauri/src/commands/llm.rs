@@ -16,6 +16,19 @@ pub fn get_llm_model_capability(
     )
 }
 
+fn connection_test_token_limit(provider: &str, base_url: &str) -> u32 {
+    // Azure may reject a one-token answer budget with HTTP 400, even
+    // though authentication and the deployment are valid.
+    if crate::llm::azure::is_provider(provider)
+        || crate::llm::protocol::detect_api_kind(provider, base_url)
+            == crate::llm::protocol::LlmApiKind::OpenAiResponses
+    {
+        4096
+    } else {
+        1
+    }
+}
+
 fn synthetic_operation_id() -> String {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -109,13 +122,13 @@ pub async fn test_llm_connection(
         return Err("Base URL must use http or https scheme".to_string());
     }
 
-    let url = crate::llm::protocol::chat_endpoint(&provider, &base_url)?;
+    let url = crate::llm::protocol::chat_endpoint_for_model(&provider, &base_url, &model)?;
     let body = crate::llm::protocol::build_chat_body(
         &provider,
         &base_url,
         &model,
-        vec![serde_json::json!({"role": "user", "content": "hi"})],
-        1,
+        vec![serde_json::json!({"role": "user", "content": "Reply only OK."})],
+        connection_test_token_limit(&provider, &base_url),
         0.3,
         false,
     );
@@ -130,7 +143,29 @@ pub async fn test_llm_connection(
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(resp.status().is_success())
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let details: String = resp
+            .text()
+            .await
+            .unwrap_or_default()
+            .chars()
+            .take(300)
+            .collect();
+        return Err(format!("HTTP {status}: {details}"));
+    }
+    if crate::llm::protocol::detect_api_kind(&provider, &base_url)
+        == crate::llm::protocol::LlmApiKind::OpenAiResponses
+    {
+        let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+        if let Some(error) = crate::llm::protocol::response_error(
+            crate::llm::protocol::LlmApiKind::OpenAiResponses,
+            &body,
+        ) {
+            return Err(error);
+        }
+    }
+    Ok(true)
 }
 
 fn build_fetch_models_request(
@@ -202,6 +237,27 @@ pub async fn fetch_llm_models(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn azure_connection_test_allows_answer_and_reasoning_tokens() {
+        for provider in ["azure-openai", "azure-foundry"] {
+            assert_eq!(
+                connection_test_token_limit(provider, "https://example.openai.azure.com/"),
+                4096
+            );
+        }
+        assert_eq!(
+            connection_test_token_limit(
+                "azure-openai",
+                "https://example.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
+            ),
+            4096
+        );
+        assert_eq!(
+            connection_test_token_limit("openai", "https://api.openai.com/v1"),
+            1
+        );
+    }
 
     #[test]
     fn managed_cloud_access_requires_active_appsumo_license() {
@@ -346,13 +402,13 @@ pub async fn bench_llm_connection(
         return Err("Base URL must use http or https scheme".to_string());
     }
 
-    let url = crate::llm::protocol::chat_endpoint(&provider, &base_url)?;
+    let url = crate::llm::protocol::chat_endpoint_for_model(&provider, &base_url, &model)?;
     let body = crate::llm::protocol::build_chat_body(
         &provider,
         &base_url,
         &model,
-        vec![serde_json::json!({"role": "user", "content": "hi"})],
-        1,
+        vec![serde_json::json!({"role": "user", "content": "Reply only OK."})],
+        connection_test_token_limit(&provider, &base_url),
         0.3,
         false,
     );
@@ -385,5 +441,16 @@ pub async fn bench_llm_connection(
         });
     }
 
+    if crate::llm::protocol::detect_api_kind(&provider, &base_url)
+        == crate::llm::protocol::LlmApiKind::OpenAiResponses
+    {
+        let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+        if let Some(error) = crate::llm::protocol::response_error(
+            crate::llm::protocol::LlmApiKind::OpenAiResponses,
+            &body,
+        ) {
+            return Err(error);
+        }
+    }
     Ok(elapsed)
 }

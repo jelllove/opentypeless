@@ -95,6 +95,7 @@ async fn check_volcengine_doubao_connection(
         operation_id: None,
         managed_audio: None,
         provider_region: None,
+        provider_endpoint: None,
     };
     provider.connect(&config).await.map_err(|e| e.to_string())?;
     let _ = provider.disconnect().await;
@@ -115,6 +116,7 @@ async fn check_aliyun_qwen3_connection(
         operation_id: None,
         managed_audio: None,
         provider_region: region,
+        provider_endpoint: None,
     };
     provider
         .connect(&config)
@@ -125,6 +127,27 @@ async fn check_aliyun_qwen3_connection(
         .await
         .map_err(|error| error.to_string())?;
     Ok(())
+}
+
+async fn check_azure_speech_connection(
+    client: &reqwest::Client,
+    api_key: &str,
+    endpoint: Option<String>,
+) -> Result<u32, String> {
+    let mut provider = stt::azure_speech::AzureSpeechProvider::with_client(client.clone());
+    let config = stt::SttConfig {
+        api_key: api_key.to_string(),
+        provider_endpoint: endpoint,
+        ..stt::SttConfig::default()
+    };
+    provider.connect(&config).await.map_err(|e| e.to_string())?;
+    provider
+        .send_audio(&[0; 3200])
+        .await
+        .map_err(|e| e.to_string())?;
+    let start = std::time::Instant::now();
+    provider.disconnect().await.map_err(|e| e.to_string())?;
+    Ok(start.elapsed().as_millis() as u32)
 }
 
 fn has_managed_cloud_access(body: &serde_json::Value) -> bool {
@@ -304,6 +327,9 @@ fn build_stt_provider_diagnostics(
             provider,
             stt::apple_speech::apple_speech_availability(None),
         ),
+        stt::azure_speech::PROVIDER => {
+            build_remote_stt_diagnostics(provider, api_key, provider_region)
+        }
         stt::config::CUSTOM_WHISPER_PROVIDER => {
             let api_key_configured = !api_key.trim().is_empty();
             match stt::config::build_custom_whisper_config(
@@ -410,6 +436,7 @@ pub async fn test_stt_connection(
     custom_model: Option<String>,
     volcengine_resource_id: Option<String>,
     provider_region: Option<String>,
+    azure_endpoint: Option<String>,
     token_store: tauri::State<'_, SessionTokenStore>,
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<bool, String> {
@@ -470,6 +497,10 @@ pub async fn test_stt_connection(
                 .await
                 .map_err(|e| e.to_string())?;
             Ok(resp.status().is_success())
+        }
+        stt::azure_speech::PROVIDER => {
+            check_azure_speech_connection(&client, &api_key, azure_endpoint).await?;
+            Ok(true)
         }
         stt::volcengine::VOLCENGINE_DOUBAO_PROVIDER => Ok(check_volcengine_doubao_connection(
             &api_key,
@@ -726,6 +757,7 @@ pub async fn bench_stt_connection(
     custom_model: Option<String>,
     volcengine_resource_id: Option<String>,
     provider_region: Option<String>,
+    azure_endpoint: Option<String>,
     token_store: tauri::State<'_, SessionTokenStore>,
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<u32, String> {
@@ -800,6 +832,9 @@ pub async fn bench_stt_connection(
                 return Err(format!("HTTP {}", resp.status()));
             }
             Ok(elapsed)
+        }
+        stt::azure_speech::PROVIDER => {
+            check_azure_speech_connection(&client, &api_key, azure_endpoint).await
         }
         stt::volcengine::VOLCENGINE_DOUBAO_PROVIDER => {
             let t0 = std::time::Instant::now();

@@ -67,6 +67,19 @@ describe('capsule centering while expanding', () => {
 })
 
 describe('getCapsuleVisibility', () => {
+  it('retains the copy-ready capsule when the backend is idle', () => {
+    expect(
+      getCapsuleVisibility({
+        capsuleAutoHide: true,
+        contextMenuOpen: false,
+        capsuleExpanded: false,
+        hasError: false,
+        pipelineState: 'idle',
+        hasPendingOutput: true,
+      }),
+    ).toBe(true)
+  })
+
   it('hides idle capsule when auto-hide is enabled', () => {
     expect(
       getCapsuleVisibility({
@@ -354,6 +367,25 @@ describe('useCapsuleResize async updates', () => {
 
   afterEach(() => {
     cleanup()
+  })
+
+  it('expands and shows a copy-ready result after idle, then hides when dismissed', async () => {
+    render(createElement(HookHarness))
+    await waitFor(() => expect(windowApiMocks.hide).toHaveBeenCalled())
+    act(() =>
+      useAppStore
+        .getState()
+        .setPendingOutput({ text: 'Recovered text', status: 'clipboard_fallback' }),
+    )
+    await waitFor(() => expect(windowApiMocks.show).toHaveBeenCalled())
+    expect(windowApiMocks.setSize).toHaveBeenLastCalledWith(
+      expect.objectContaining({ width: 224, height: 60 }),
+    )
+    const previousHides = windowApiMocks.hide.mock.calls.length
+    act(() => useAppStore.getState().setPendingOutput(null))
+    await waitFor(() =>
+      expect(windowApiMocks.hide.mock.calls.length).toBeGreaterThan(previousHides),
+    )
   })
 
   it.each(['preparing', 'recording', 'idle'] as const)(

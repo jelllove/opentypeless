@@ -1,4 +1,5 @@
 pub mod clipboard;
+pub mod input_target;
 pub mod keyboard;
 pub mod windows_modifier_guard;
 pub mod windows_sendinput;
