@@ -67,13 +67,17 @@ impl AskDictationState {
     }
 
     pub(crate) fn try_begin_starting(&self) -> bool {
-        let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
-        if guard.starting || guard.session.is_some() || guard.processing {
-            return false;
-        }
-        guard.starting = true;
-        guard.stop_after_start = false;
-        true
+        crate::updates::INSTALL_GATE
+            .while_not_installing(|| {
+                let mut guard = self.0.lock().unwrap_or_else(|e| e.into_inner());
+                if guard.starting || guard.session.is_some() || guard.processing {
+                    return false;
+                }
+                guard.starting = true;
+                guard.stop_after_start = false;
+                true
+            })
+            .unwrap_or(false)
     }
 
     fn clear_starting(&self) {

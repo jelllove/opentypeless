@@ -417,7 +417,10 @@ describe('useCapsuleResize async updates', () => {
       const position = windowApiMocks.setPosition.mock.lastCall?.[0]
       const size = windowApiMocks.setSize.mock.lastCall?.[0]
       expect(position.x + size.width / 2).toBe(960)
-      expect(position.y).toBe(900)
+      expect(position.y).toBe(1040 - size.height - 80)
+      if (pipelineState === 'idle') {
+        expect(size).toEqual(expect.objectContaining({ width: 384, height: 204 }))
+      }
     },
   )
 

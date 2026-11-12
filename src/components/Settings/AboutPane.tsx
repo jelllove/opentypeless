@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { invoke } from '@tauri-apps/api/core'
 import i18n from '../../i18n'
 import { ExternalLink } from 'lucide-react'
+import { UpdatePrompt } from '../UpdatePrompt'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { useAppStore } from '../../stores/appStore'
 import { APP_NAME, APP_VERSION, APP_REPO_URL, UI_LANGUAGES } from '../../lib/constants'
@@ -29,6 +30,8 @@ export function AboutPane() {
       </div>
 
       <p className="text-text-secondary leading-relaxed">{t('settings.aboutDescription')}</p>
+
+      <UpdatePrompt settings />
 
       {/* Language */}
       <SectionCard title={t('settings.language')}>

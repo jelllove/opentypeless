@@ -112,7 +112,7 @@ export function useTauriEvents() {
         useCloudServiceStore.getState().clearIncident()
       }
       if (state === 'idle') {
-        // Don't clear pipelineError here — CapsuleError auto-resets after 2.5s.
+        // Keep errors available until dismissed or a new recording starts.
         // Clearing here would swallow errors from failed start() calls that
         // transition Recording → Idle in rapid succession.
         getHistory(200, 0)
@@ -157,7 +157,14 @@ export function useTauriEvents() {
     addListener<ContextProfileSummary>('pipeline:context', setLastContext)
     addListener<PipelineErrorPayload>('pipeline:error', (payload) => {
       const capsuleErrorKey = capsuleErrorKeyFromPayload(payload)
-      setPipelineError(t(`capsule.errors.${capsuleErrorKey}`))
+      // Only expand diagnostics explicitly sanitized by Azure, or a status-only detail.
+      // Other providers' legacy details may contain raw URLs or response bodies.
+      const details = typeof payload === 'string' ? null : payload.details
+      const safeDetails =
+        details && (details.startsWith('Azure Speech') || /^HTTP \d{3}$/.test(details))
+          ? details
+          : null
+      setPipelineError(t(`capsule.errors.${capsuleErrorKey}`), safeDetails)
       if (capsuleErrorKey === 'accessibility_required') {
         setAccessibilityTrusted(false)
       }

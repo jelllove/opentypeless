@@ -337,7 +337,8 @@ interface AppState {
 
   // Pipeline error
   pipelineError: string | null
-  setPipelineError: (error: string | null) => void
+  pipelineErrorDetails: string | null
+  setPipelineError: (error: string | null, details?: string | null) => void
 
   // macOS Accessibility permission
   accessibilityTrusted: boolean
@@ -874,7 +875,9 @@ export const useAppStore = create<AppState>((set) => ({
   setLlmModels: (llmModels) => set({ llmModels }),
 
   pipelineError: null,
-  setPipelineError: (pipelineError) => set({ pipelineError }),
+  pipelineErrorDetails: null,
+  setPipelineError: (pipelineError, details = null) =>
+    set({ pipelineError, pipelineErrorDetails: pipelineError ? details : null }),
 
   accessibilityTrusted: true,
   setAccessibilityTrusted: (accessibilityTrusted) => set({ accessibilityTrusted }),

@@ -40,8 +40,9 @@ function getCapsuleShellSize(capsuleState: string) {
     case 'recording':
     case 'transcribing':
     case 'polishing':
-    case 'error':
       return { width: 200, height: 36 }
+    case 'error':
+      return { width: 360, height: 180, borderRadius: 16 }
     default:
       return { width: 36, height: 36 }
   }
@@ -147,12 +148,12 @@ export function Capsule() {
       <motion.div
         layout
         transition={{ layout: { duration: 0.2, ease: [0.2, 0, 0, 1] } }}
-        className={`absolute left-3 rounded-full pointer-events-auto shrink-0 ${
+        className={`absolute left-3 pointer-events-auto shrink-0 ${
           capsuleState === 'error'
-            ? 'jelly-capsule-error'
+            ? 'jelly-capsule-error rounded-2xl'
             : capsuleState === 'idle'
-              ? 'jelly-capsule text-neutral-700'
-              : 'jelly-capsule-active text-white'
+              ? 'jelly-capsule rounded-full text-neutral-700'
+              : 'jelly-capsule-active rounded-full text-white'
         }`}
         style={capsuleShellSize}
         onPointerDown={handlePointerDown}

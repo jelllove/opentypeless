@@ -18,6 +18,14 @@ The adapter uses `POST /speechtotext/transcriptions:transcribe?api-version=2025-
 
 HTTP 401/403: check that the key belongs to this resource and that the selected API is enabled for its tier/region. HTTP 404: check the resource endpoint and region support. HTTP 429: check resource quota or retry later. Do not paste keys into logs or source-controlled files.
 
+### Diagnosing STT failures after stop
+
+The local diagnostic build keeps errors visible until dismissed or a new recording starts. For an Azure HTTP failure, use **Copy error** to capture the status, bounded service code/message, request ID when returned, recording duration, attempts and upload elapsed time. Copy failure leaves a retry action. Share this diagnostic text instead of settings files, credentials or recorded audio. Non-JSON gateway errors expose their status only; malformed transcription responses expose a local validation message. No diagnostic history is persisted by this change. Backend tracing currently writes to the console rather than a persistent app log, and ordinary history entries are not a record of failed STT uploads.
+
+HTTP 400 suggests request/audio validation; HTTP 429 indicates service rate/quota limits and is not retried. HTTP 5xx is retried up to twice. A displayed error is evidence for investigation, not proof that the underlying issue is fixed. No live provider calls are part of installer verification.
+
+The local unsigned x64 diagnostic installer is named `output/OpenTypeless_1.3.0_stt-diagnostics_x64-setup.exe`. It keeps the application version at 1.3.0 and is not a new published release. Exit the tray app before installing manually; existing provider settings are preserved.
+
 ### Azure OpenAI / Microsoft Foundry
 
 1. Deploy a model supporting **Chat Completions** or **Responses** in the resource. Select **Azure OpenAI (GPT)** for GPT/o-series, or **Azure / Microsoft Foundry** for other OpenAI-compatible model deployments.
@@ -75,6 +83,8 @@ Build from a Windows x64 machine with Node.js, the Rust MSVC toolchain, Visual S
 
 The local build setup used on this machine keeps Rust under `output/build-tools/` and does not change the system PATH. These tools and the local packaging override are ignored by Git. On a new machine, install the prerequisites before running the build; the following environment setup assumes this project-local Rust installation already exists.
 
+In an isolated worktree, `CARGO_HOME` and `RUSTUP_HOME` may reference an existing local toolchain outside the worktree. Keep the current directory and generated `target/`, `dist/` and `output/` in the active worktree; do not switch to the original checkout to build.
+
 Run from the repository root in PowerShell:
 
 ```powershell
@@ -110,17 +120,35 @@ The 1.1.64 local installers under `output/` were test builds. The fork release s
 
 Exit the running app from its tray menu before reinstalling. Existing preferences are preserved: after installation choose Right Alt and Toggle on/off in General and save, then configure the Azure providers. Building the installer does not itself install or launch it.
 
-### Fork releases (Windows x64, unsigned)
+### Fork releases (Windows x64)
 
 Publish only to `jelllove/opentypeless`, not the upstream repository or upstream signing infrastructure. The first fork release is `v1.2.0`, built from the commit carrying that version. Keep `package.json`, npm lockfile, Cargo package/lockfile, Tauri config and the frontend version in sync before tagging. The fork is Windows-x64-only for this release; macOS and Linux have not been packaged or runtime-tested here.
 
-The release assets are the unsigned NSIS `.exe` and `SHA256SUMS.txt`. Release notes must identify the source commit, Windows x64 target, unsigned status and manual-install requirement. Verify that the application PE machine type is AMD64, the installer is NotSigned, and SHA-256 matches the uploaded artifact. Do not upload credentials, local settings, diagnostic logs, the project-local Rust toolchain, or previously generated 1.1.64 test installers.
+v1.2.0/v1.3.0 shipped only an unsigned NSIS `.exe` and `SHA256SUMS.txt`. Starting with the v1.4.0 implementation, `.github/workflows/release-fork.yml` supports stable `vX.Y.Z` tags in this fork only. It tests/builds Windows x64, signs the updater payload and publishes the `.exe`, `.exe.sig`, `latest.json` and `SHA256SUMS.txt` together. It refuses to overwrite an existing release. Dispatch must select a stable version tag, not a branch. Creating/pushing a tag publishes a release and requires explicit user authorization.
+
+Release notes must identify the source commit, Windows x64 target, absence of Authenticode signing, and the one-time manual upgrade from v1.3.0 to adopt the fork public key. Verify application machine type AMD64, independent updater signature, and SHA-256. Do not upload credentials, local settings, diagnostic logs, private signing material, local toolchains, or older test installers.
 
 The fork retains the app identifier so it upgrades the existing installation and keeps preferences. Exit the tray application before installing. Saved Azure keys do not activate Azure by themselves: choose the provider and save settings.
 
 ### Signing and updater artifacts
 
-The checked-in configuration enables updater artifacts. A local build without the project's updater signing key must override `bundle.createUpdaterArtifacts` to `false`; `--no-sign` alone does not express that configuration change. Keep the override under `output/` instead of editing the release configuration. This does not disable the application's existing update-check behavior. The fork updater URL points to this fork, not upstream, but no signed updater manifest/package is published in the unsigned release: upgrades are manual. Never claim Authenticode or Tauri updater signatures for an unsigned installer.
+The checked-in configuration enables updater artifacts and embeds this fork's public key. `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` are configured as repository Actions Secrets with explicit user approval. The encrypted local key is under `%LOCALAPPDATA%/OpenTypeless/release-signing/jelllove-opentypeless.key`; the matching `.password.dpapi` is protected for the current Windows user. Back up the key/password securely; losing them requires another manual key-migration upgrade. Never print or commit either secret. Rotating the key requires a deliberate migration strategy.
+
+A local build without the key can override `bundle.createUpdaterArtifacts` to `false`. Tauri CLI 2.11.2 `--no-sign` also skips updater signing (confirmed in build output), so the no-Authenticode path must explicitly sign the final installer afterward. With signing environment variables loaded securely, run:
+
+```powershell
+npm run tauri -- build --target x86_64-pc-windows-msvc --bundles nsis --no-sign --ci -- --locked
+npm run tauri -- signer sign src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/OpenTypeless_1.4.0_x64-setup.exe
+node scripts/build-update-manifest.mjs src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis 1.4.0
+```
+
+The manifest generator cryptographically verifies the final installer and trusted signature comment against the embedded fork public key before writing metadata and checksums. `latest.json` points only to this fork's versioned GitHub installer URL; it is not uploaded by a local build. Authenticode NotSigned and a valid independent updater payload signature can coexist. Never bypass signature verification or fall back to executing an unverified download.
+
+### Automatic update verification
+
+Release builds check the fork feed on startup and every four hours when enabled. About → Application updates provides manual check, progress, release-page fallback and an immediately saved auto-update switch in `update-settings.json`. A download already in flight may finish after automation is disabled. A ready update installs only through **Restart to update**, never on quit. The native gate rejects active dictation/Ask and blocks new hotkey starts during installation. NSIS uses passive progress and relaunches the installed application.
+
+The verified local v1.4.0 installer is `output/OpenTypeless_1.4.0_x64-setup.exe`, with detached `.exe.sig`, `latest.json` and `SHA256SUMS.txt` alongside it. It contains both the updater and STT diagnostics. Public v1.3.0 has no update manifest and cannot adopt the fork signing key automatically; install v1.4.0 manually once. Future signed releases expose the feed through this fork's latest release. Local fixtures alone cannot demonstrate live automatic delivery. Test fixtures cover valid/tampered signatures over loopback HTTP; production keeps HTTPS and signature verification enabled. Fixture success does not prove installation, public GitHub availability, or a full old-to-new upgrade. Exiting before installation drops the in-memory download; a later run may download it again.
 
 ### Verification
 

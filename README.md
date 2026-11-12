@@ -8,7 +8,7 @@
 
 <h1 align="center">OpenTypeless</h1>
 
-> **Azure voice-input fork:** maintained at [jelllove/opentypeless](https://github.com/jelllove/opentypeless), based on [upstream OpenTypeless](https://github.com/tover0314-w/opentypeless). Download this fork's Windows x64 installer from [Releases](https://github.com/jelllove/opentypeless/releases). These installers are **unsigned** and are installed manually; Windows may show an Unknown Publisher or SmartScreen warning. This fork does not publish signed automatic-update packages. Upstream links and screenshots below describe the original project.
+> **Azure voice-input fork:** maintained at [jelllove/opentypeless](https://github.com/jelllove/opentypeless), based on [upstream OpenTypeless](https://github.com/tover0314-w/opentypeless). Download this fork's Windows x64 installer from [Releases](https://github.com/jelllove/opentypeless/releases). These installers are **not Authenticode signed**; Windows may show an Unknown Publisher or SmartScreen warning. v1.4.0 adds fork-signature-verified automatic downloads and user-controlled restart/install. Existing v1.3.0 installations need one manual upgrade to adopt the new signing key. Upstream links and screenshots below describe the original project.
 
 <p align="center">
   Open-source alternative to Wispr Flow and Superwhisper for AI voice input, rewriting, and voice Q&A on macOS, Windows, and Linux.
@@ -46,6 +46,15 @@
   <strong>Dictate anywhere</strong> · <strong>Rewrite selected text</strong> · <strong>Ask one-shot voice questions</strong> · <strong>Bring your own keys or use managed cloud words</strong>
 </p>
 
+## What's New in This Fork (v1.4.0)
+
+- Automatic update checks at startup and every four hours, verified downloads, and explicit **Restart to update** without interrupting dictation or Ask.
+- About settings include an immediate auto-update preference, manual check, progress and release-page fallback.
+- Persistent, copyable Azure Speech error diagnostics. This helps identify transcription failures rather than hiding them behind a generic label.
+- Fork-owned updater signatures and a dedicated Windows release workflow; this is separate from Windows publisher signing. See [release operations](PLAYBOOK.md#fork-releases-windows-x64).
+
+Download [v1.4.0](https://github.com/jelllove/opentypeless/releases/tag/v1.4.0) and verify `SHA256SUMS.txt` before the initial manual installation.
+
 ## What's New in This Fork (v1.3.0)
 
 - Bundled 2,967-term Chinese/common and software vocabulary, with no separate download.
@@ -60,6 +69,10 @@
 - Azure connection-test HTTP 400 fix and byte-safe Responses streaming.
 
 See [CHANGELOG.md](CHANGELOG.md) and the [fork release](https://github.com/jelllove/opentypeless/releases/tag/v1.3.0).
+
+### Local STT diagnostic build
+
+Speech failures stay visible until dismissed or a new recording starts, with a copy-error action. Azure HTTP failures include sanitized service details, status, request ID when available, attempts and timing. This improves diagnosis; it does not resolve an unidentified provider failure.
 
 ## Upstream Highlights in v1.1.55
 

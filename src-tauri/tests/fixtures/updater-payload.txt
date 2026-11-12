@@ -1,0 +1,1 @@
+OpenTypeless updater signature verification fixture. Not an installer.

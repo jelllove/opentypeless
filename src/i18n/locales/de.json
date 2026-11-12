@@ -236,6 +236,9 @@
     "copiedText": "Kopiert",
     "copyFailed": "Kopieren fehlgeschlagen – erneut versuchen",
     "dismissResult": "Ergebnis schließen",
+    "copyError": "Fehler kopieren",
+    "dismissError": "Fehler schließen",
+    "errorDetailsUnavailable": "Keine weiteren Details. Prüfen Sie die Anbietereinstellungen und versuchen Sie es erneut.",
     "microphoneLevel": "Mikrofonpegel",
     "microphoneLevelValue": "Eingangspegel: {{level}}%",
     "cancelRecording": "Aufnahme abbrechen",
@@ -827,6 +830,23 @@
     "reload": "Neu laden"
   },
   "updates": {
+    "title": "Anwendungsupdates",
+    "automatic": "Automatische Updates",
+    "policy": "Beim Start und alle vier Stunden prüfen, herunterladen und verifizieren. Installation nur über „Zum Aktualisieren neu starten“, ohne Aufnahmen zu unterbrechen.",
+    "development": "Updates sind in Entwicklungsversionen deaktiviert.",
+    "busy": "Beenden Sie die Aufnahme oder Verarbeitung vor dem Neustart.",
+    "restart": "Zum Aktualisieren neu starten",
+    "checkNow": "Jetzt prüfen",
+    "viewRelease": "Version ansehen",
+    "status": {
+      "idle": "Nach der neuesten Version suchen.",
+      "checking": "Updates werden gesucht…",
+      "upToDate": "Die Version ist aktuell.",
+      "downloading": "{{version}} wird geladen und geprüft — {{percent}}%",
+      "ready": "Version {{version}} ist zur Installation bereit.",
+      "installing": "Installation und Neustart…",
+      "error": "Update fehlgeschlagen. Prüfen Sie die Verbindung, versuchen Sie es erneut oder laden Sie die Version von der Release-Seite."
+    },
     "availableTitle": "Aktualisierung verfügbar",
     "availableBody": "Version {{version}} kann installiert werden.",
     "install": "Update installieren",

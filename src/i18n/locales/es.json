@@ -236,6 +236,9 @@
     "copiedText": "Copiado",
     "copyFailed": "Error al copiar — reintentar",
     "dismissResult": "Cerrar resultado",
+    "copyError": "Copiar error",
+    "dismissError": "Cerrar error",
+    "errorDetailsUnavailable": "No hay más detalles. Revisa la configuración del proveedor e inténtalo de nuevo.",
     "microphoneLevel": "Nivel del micrófono",
     "microphoneLevelValue": "Nivel de entrada: {{level}}%",
     "cancelRecording": "Cancelar grabación",
@@ -827,6 +830,23 @@
     "reload": "Recargar"
   },
   "updates": {
+    "title": "Actualizaciones de la aplicación",
+    "automatic": "Actualizaciones automáticas",
+    "policy": "Busca al iniciar y cada cuatro horas; descarga y verifica. Solo instala al elegir Reiniciar para actualizar, sin interrumpir grabaciones.",
+    "development": "Las actualizaciones están desactivadas en versiones de desarrollo.",
+    "busy": "Termina la grabación o el procesamiento antes de reiniciar.",
+    "restart": "Reiniciar para actualizar",
+    "checkNow": "Buscar ahora",
+    "viewRelease": "Ver versión",
+    "status": {
+      "idle": "Buscar la última versión.",
+      "checking": "Buscando actualizaciones…",
+      "upToDate": "La versión está actualizada.",
+      "downloading": "Descargando y verificando {{version}} — {{percent}}%",
+      "ready": "La versión {{version}} está lista para instalar.",
+      "installing": "Instalando y reiniciando…",
+      "error": "Error al actualizar. Revisa la conexión, reintenta o descarga desde la página de versiones."
+    },
     "availableTitle": "Actualización disponible",
     "availableBody": "La versión {{version}} está lista para instalarse.",
     "install": "Instalar actualización",

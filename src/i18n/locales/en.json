@@ -236,6 +236,9 @@
     "copiedText": "Copied",
     "copyFailed": "Copy failed — retry",
     "dismissResult": "Dismiss result",
+    "copyError": "Copy error",
+    "dismissError": "Dismiss error",
+    "errorDetailsUnavailable": "No additional details. Check provider settings and try again.",
     "microphoneLevel": "Microphone input level",
     "microphoneLevelValue": "Input level: {{level}}%",
 
@@ -828,6 +831,23 @@
     "reload": "Reload"
   },
   "updates": {
+    "title": "Application updates",
+    "automatic": "Automatic updates",
+    "policy": "Check at startup and every four hours; download and verify updates. Install only when you choose Restart to update. Recording is never interrupted.",
+    "development": "Updates are disabled in development builds.",
+    "busy": "Finish recording or processing before restarting.",
+    "restart": "Restart to update",
+    "checkNow": "Check now",
+    "viewRelease": "View release",
+    "status": {
+      "idle": "Check for the latest release.",
+      "checking": "Checking for updates…",
+      "upToDate": "You are up to date.",
+      "downloading": "Downloading and verifying {{version}} — {{percent}}%",
+      "ready": "Version {{version}} is ready to install.",
+      "installing": "Installing and restarting…",
+      "error": "Update failed. Check your connection, retry, or download from the release page."
+    },
     "availableTitle": "Update available",
     "availableBody": "Version {{version}} is ready to install.",
     "install": "Install update",

@@ -140,6 +140,32 @@ describe('useTauriEvents', () => {
     expect(useAppStore.getState().pipelineError).toBeNull()
   })
 
+  it('keeps Azure diagnostics after idle and clears them on a new recording', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:error')).toBe(true))
+    const details = 'Azure Speech — HTTP 429\ncode: TooManyRequests\nRequest ID: test-id'
+    act(() => {
+      eventListeners.get('pipeline:error')?.({ payload: { code: 'stt_failed', details } })
+      eventListeners.get('pipeline:state')?.({ payload: 'idle' })
+    })
+    expect(useAppStore.getState().pipelineErrorDetails).toBe(details)
+    expect(useAppStore.getState().pipelineError).toBe('capsule.errors.stt_failed')
+    act(() => eventListeners.get('pipeline:state')?.({ payload: 'preparing' }))
+    expect(useAppStore.getState().pipelineErrorDetails).toBeNull()
+    expect(useAppStore.getState().pipelineError).toBeNull()
+  })
+
+  it('does not expose raw legacy provider details', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:error')).toBe(true))
+    act(() => {
+      eventListeners.get('pipeline:error')?.({
+        payload: { code: 'stt_failed', details: 'https://host/?api-key=private' },
+      })
+    })
+    expect(useAppStore.getState().pipelineErrorDetails).toBeNull()
+  })
+
   it('forwards one Rust session-invalid event to the shared coordinator in Strict Mode', async () => {
     render(
       <StrictMode>

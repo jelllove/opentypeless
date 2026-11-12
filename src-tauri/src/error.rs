@@ -18,6 +18,8 @@ pub enum AppError {
     Network(String),
     Timeout(Duration),
     Api { status: u16, body: String },
+    // Azure adapter supplies bounded, sanitized diagnostics, never the raw response.
+    AzureSpeechApi { status: u16, details: String },
     Auth(String),
     Quota(String),
     LlmQuota(String),
@@ -68,7 +70,9 @@ impl AppError {
         match self {
             AppError::Network(_) => true,
             AppError::Timeout(_) => true,
-            AppError::Api { status, .. } => *status >= 500,
+            AppError::Api { status, .. } | AppError::AzureSpeechApi { status, .. } => {
+                *status >= 500
+            }
             AppError::Auth(_) => false,
             AppError::Quota(_) => false,
             AppError::LlmQuota(_) => false,
@@ -89,6 +93,15 @@ impl AppError {
                     ("stt_failed".to_string(), Some(format!("HTTP {}", status)))
                 }
             }
+            AppError::AzureSpeechApi { status, details } => (
+                if *status == 401 || *status == 403 {
+                    "stt_invalid_key"
+                } else {
+                    "stt_failed"
+                }
+                .to_string(),
+                Some(details.clone()),
+            ),
             AppError::Auth(msg) => ("stt_invalid_key".to_string(), Some(msg.clone())),
             AppError::Quota(msg) => ("stt_quota_exceeded".to_string(), Some(msg.clone())),
             AppError::LlmQuota(msg) => ("llm_quota_exceeded".to_string(), Some(msg.clone())),
@@ -116,6 +129,7 @@ impl std::fmt::Display for AppError {
             AppError::Network(msg) => write!(f, "Network error: {}", msg),
             AppError::Timeout(d) => write!(f, "Timeout after {:.1}s", d.as_secs_f64()),
             AppError::Api { status, body } => write!(f, "API error {}: {}", status, body),
+            AppError::AzureSpeechApi { details, .. } => write!(f, "{}", details),
             AppError::Auth(msg) => write!(f, "Auth error: {}", msg),
             AppError::Quota(msg) => write!(f, "Quota error: {}", msg),
             AppError::LlmQuota(msg) => write!(f, "LLM quota error: {}", msg),

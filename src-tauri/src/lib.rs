@@ -20,6 +20,9 @@ pub mod storage;
 pub mod stt;
 pub mod stt_finalize;
 pub mod tray;
+#[cfg(test)]
+mod updater_tests;
+pub mod updates;
 pub mod voice_intent;
 mod window_state;
 
@@ -1170,6 +1173,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             start_recording,
+            updates::begin_update_install,
+            updates::cancel_update_install,
+            updates::finish_update_install,
             stop_recording,
             abort_recording,
             commands::ask::ask_anything,

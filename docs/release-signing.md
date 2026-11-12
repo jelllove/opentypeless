@@ -1,5 +1,7 @@
 # Release Signing Setup
 
+> **Fork notice:** This document below describes upstream's historical cross-repository infrastructure, not this fork's release procedure. For `jelllove/opentypeless`, use [PLAYBOOK.md — Fork releases](../PLAYBOOK.md#fork-releases-windows-x64) and `.github/workflows/release-fork.yml`. The fork has its own updater signing key and repository Actions Secrets; no upstream credentials or publishing targets are used. Updater signatures do not imply Authenticode signing.
+
 OpenTypeless releases are built in `toverwu-qaq/opentypeless` and published to
 `tover0314-w/opentypeless`.
 

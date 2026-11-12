@@ -1,104 +1,126 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Download, RefreshCw, X } from 'lucide-react'
-import { check, type Update } from '@tauri-apps/plugin-updater'
-import { relaunch } from '@tauri-apps/plugin-process'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { useTranslation } from 'react-i18next'
+import { useAppStore } from '../stores/appStore'
+import {
+  checkForUpdates,
+  installUpdate,
+  loadUpdatePreferences,
+  setAutomaticUpdates,
+  UPDATE_CHECK_INTERVAL,
+  useUpdateStore,
+} from '../stores/updateStore'
+import { APP_REPO_URL } from '../lib/constants'
 
-type InstallState = 'idle' | 'installing' | 'error'
-
-export function UpdatePrompt() {
+export function UpdatePrompt({ settings = false }: { settings?: boolean }) {
   const { t } = useTranslation()
-  const [update, setUpdate] = useState<Update | null>(null)
-  const [dismissed, setDismissed] = useState(false)
-  const [installState, setInstallState] = useState<InstallState>('idle')
+  const {
+    phase,
+    automatic,
+    loaded,
+    preferenceSaving,
+    preferenceError,
+    version,
+    percent,
+    dismissed,
+  } = useUpdateStore()
+  const busy = useAppStore((s) => s.pipelineState !== 'idle')
 
   useEffect(() => {
+    if (settings || import.meta.env.DEV) return
     let cancelled = false
-
-    check()
-      .then((availableUpdate) => {
-        if (!cancelled && availableUpdate) {
-          setUpdate(availableUpdate)
-        }
-      })
-      .catch((error) => {
-        console.warn('Failed to check for updates:', error)
-      })
-
+    const automaticCheck = () => {
+      if (!cancelled && useUpdateStore.getState().automatic) void checkForUpdates()
+    }
+    void loadUpdatePreferences().then(automaticCheck)
+    const timer = setInterval(automaticCheck, UPDATE_CHECK_INTERVAL)
     return () => {
       cancelled = true
+      clearInterval(timer)
     }
-  }, [])
+  }, [settings])
 
-  if (!update || dismissed) return null
+  if (!settings && (dismissed || !['downloading', 'ready', 'installing'].includes(phase)))
+    return null
 
-  const installUpdate = async () => {
-    setInstallState('installing')
-    try {
-      await update.downloadAndInstall()
-      await relaunch()
-    } catch (error) {
-      console.warn('Failed to install update:', error)
-      setInstallState('error')
-    }
-  }
-
-  const installing = installState === 'installing'
-
+  const working = ['checking', 'downloading', 'installing'].includes(phase)
+  const ready = phase === 'ready'
   return (
-    <div
-      className="fixed right-4 bottom-4 z-[9998] w-[min(360px,calc(100vw-32px))] rounded-[8px] border border-border bg-bg-secondary p-4 shadow-xl"
-      role="status"
-      aria-live="polite"
+    <section
+      className={
+        settings
+          ? 'rounded-[10px] border border-border p-3'
+          : 'fixed right-4 bottom-4 z-[9998] w-[min(360px,calc(100vw-32px))] rounded-[8px] border border-border bg-bg-secondary p-4 shadow-xl'
+      }
+      aria-label={t('updates.title')}
     >
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] bg-accent/10 text-accent">
-          <Download size={17} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-[14px] font-semibold text-text-primary">
-                {t('updates.availableTitle', 'Update available')}
-              </h2>
-              <p className="mt-1 text-[12px] leading-5 text-text-secondary">
-                {t('updates.availableBody', 'Version {{version}} is ready to install.', {
-                  version: update.version,
-                })}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setDismissed(true)}
-              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] border border-transparent text-text-tertiary transition-colors hover:border-border hover:text-text-primary"
-              aria-label={t('updates.dismiss', 'Dismiss')}
-            >
-              <X size={15} />
-            </button>
-          </div>
-
-          {installState === 'error' && (
-            <p className="mt-3 text-[12px] leading-5 text-error">
-              {t(
-                'updates.error',
-                'Update failed. Please download the latest version from the website.',
-              )}
-            </p>
-          )}
-
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[14px] font-semibold text-text-primary">{t('updates.title')}</h2>
+        {!settings && phase !== 'installing' && (
           <button
             type="button"
-            onClick={installUpdate}
-            disabled={installing}
-            className="mt-3 inline-flex h-9 items-center justify-center gap-2 rounded-[7px] bg-accent px-3 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
+            onClick={() => useUpdateStore.setState({ dismissed: true })}
+            aria-label={t('updates.dismiss')}
+            className="rounded p-1 text-text-secondary hover:text-text-primary"
           >
-            {installing ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
-            {installing
-              ? t('updates.installing', 'Installing...')
-              : t('updates.install', 'Install update')}
+            <X size={15} />
           </button>
-        </div>
+        )}
       </div>
-    </div>
+      {settings && (
+        <label className="mt-3 flex items-center justify-between gap-3 text-text-primary">
+          <span>{t('updates.automatic')}</span>
+          <input
+            type="checkbox"
+            checked={automatic}
+            disabled={!loaded || preferenceSaving || import.meta.env.DEV || phase === 'installing'}
+            onChange={(event) => void setAutomaticUpdates(event.target.checked)}
+          />
+        </label>
+      )}
+      <p className="mt-2 text-[12px] leading-5 text-text-secondary">{t('updates.policy')}</p>
+      <p role="status" className="mt-2 text-[12px] text-text-primary">
+        {import.meta.env.DEV
+          ? t('updates.development')
+          : t(`updates.status.${phase}`, { version, percent: Math.round(percent ?? 0) })}
+      </p>
+      {settings && preferenceError && (
+        <p role="alert" className="mt-2 text-[12px] text-error">
+          {t('common.saveFailed')}
+        </p>
+      )}
+      {busy && ready && <p className="mt-2 text-[12px] text-text-secondary">{t('updates.busy')}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {ready ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void installUpdate()}
+            className="inline-flex items-center gap-2 rounded-[7px] bg-accent px-3 py-2 text-[13px] text-white disabled:opacity-50"
+          >
+            <RefreshCw size={14} />
+            {t('updates.restart')}
+          </button>
+        ) : settings || phase === 'error' ? (
+          <button
+            type="button"
+            disabled={working || import.meta.env.DEV}
+            onClick={() => void checkForUpdates()}
+            className="inline-flex items-center gap-2 rounded-[7px] bg-accent px-3 py-2 text-[13px] text-white disabled:opacity-50"
+          >
+            <Download size={14} />
+            {t('updates.checkNow')}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => void openUrl(`${APP_REPO_URL}/releases/latest`).catch(() => {})}
+          className="rounded-[7px] border border-border px-3 py-2 text-[12px] text-text-secondary"
+        >
+          {t('updates.viewRelease')}
+        </button>
+      </div>
+    </section>
   )
 }

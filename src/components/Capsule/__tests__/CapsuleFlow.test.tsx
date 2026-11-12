@@ -72,6 +72,17 @@ describe('Capsule flow states', () => {
     expect(useAppStore.getState().pendingOutput).toBeNull()
   })
 
+  it('expands the error shell so diagnostic text is not clipped by the pill shape', () => {
+    useAppStore.getState().setPipelineError('STT failed', 'Azure Speech — HTTP 429')
+    const { container } = render(<Capsule />)
+    expect(container.querySelector('.jelly-capsule-error')).toHaveStyle({
+      width: '360px',
+      height: '180px',
+      borderRadius: '16px',
+    })
+    expect(screen.getByText('Azure Speech — HTTP 429')).toBeInTheDocument()
+  })
+
   it('renders preparing state', () => {
     useAppStore.setState({ pipelineState: 'preparing' })
 

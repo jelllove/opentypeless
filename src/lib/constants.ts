@@ -13,7 +13,7 @@ export const UI_LANGUAGES = [
 ] as const
 
 export const APP_NAME = 'OpenTypeless'
-export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.3.0'
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.4.0'
 export const CLIENT_VERSION_HEADER = 'X-OpenTypeless-Version'
 export const APP_VERSION_HEADER_VALUE = APP_VERSION.replace(/^v/i, '')
 export const APP_REPO_URL = 'https://github.com/jelllove/opentypeless'

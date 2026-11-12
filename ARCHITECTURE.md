@@ -8,6 +8,12 @@ The Tauri desktop pipeline owns recording, transcription finalization, optional 
 
 Microphone capture produces 16 kHz, mono, 16-bit PCM. The Azure provider buffers audio in memory while recording, then creates a WAV and submits a synchronous fast-transcription REST request on stop. It returns Azure's display-form transcript to the existing pipeline. Ask uses the same provider configuration and finalization timeout policy.
 
+## STT Failure Diagnostics
+
+Azure HTTP errors use a dedicated internal error variant carrying only bounded service code/message and an optional request ID. The adapter redacts the configured key and omits URL tokens before truncation; arbitrary response bodies are not forwarded. Recording duration, attempt count and elapsed upload time are appended at finalization. Existing auth classification and retry policy are unchanged.
+
+The frontend retains the error label and safe diagnostic text in transient state. A scrollable error panel offers copy and dismiss and remains visible while idle; starting another recording clears it. Legacy provider details are not automatically exposed because they may contain raw URLs or bodies. This adds observability, not a fix for a specific unobserved Azure failure.
+
 ## Azure LLM Protocol
 
 Azure OpenAI and Foundry reuse the existing provider with shared protocol helpers for URL normalization, authentication, request bodies and response parsing. Complete Responses URLs select a dedicated Responses wire adapter; versioned root URLs construct deployment-scoped Chat Completions like the Azure SDK. Resource v1 endpoints retain their existing behavior. Cleanup, Ask and connection tests use the same selection, and the model field is the deployment alias.
@@ -45,7 +51,13 @@ The native capture thread synthesizes distinct 180 ms two-note cues. Windows use
 
 ## Fork Distribution
 
-The user-approved publishing target is `jelllove/opentypeless`. Windows x64 v1.3.0 is an explicitly unsigned manual-install release, independent of upstream's cross-repository signing pipeline. The application identifier is preserved for in-place upgrades and existing preferences; repository/update links point to the fork to prevent a later upstream update silently replacing these custom features. No signed updater artifacts are published without the matching private signing key.
+The user-approved publishing target is `jelllove/opentypeless`. v1.3.0 was an unsigned manual-install release. The v1.4.0 update path uses this fork's own Tauri/minisign key rather than upstream's key; older clients require one manual upgrade. The installer remains without Authenticode signing unless a separate publisher certificate is configured. The application identifier is preserved for in-place upgrades and existing preferences.
+
+A single main-window update store coordinates About and the update notification. It loads a separate local auto-update preference before startup checks, checks every four hours, and uses Tauri's native download/signature verification. Ready state is set only after the verified download resolves, not the transport-finished event. Verified bytes remain in Tauri resources for the current process; closing the app before installation may require downloading again.
+
+Restart/install is explicit. A short native mutex gate serializes voice-start reservations against entering installation and checks real dictation/Ask activity, protecting against stale frontend state. Windows Tauri updater launches the passive NSIS installer and exits; NSIS restarts the app. Failure releases the gate. There is no forced restart or automatic install on quit.
+
+The fork-only stable-tag workflow builds/test-checks Windows x64, signs the updater payload with repository Actions Secrets, and publishes installer, detached signature, latest.json and checksums together. Private signing material stays outside source and bundles. HTTPS plus the embedded public key is the install trust boundary; checksum files supplement integrity checks but are not a substitute for publisher verification. Local builds or fixture tests do not establish that a public release is available.
 
 ## Constraints
 

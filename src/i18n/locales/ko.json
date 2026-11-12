@@ -236,6 +236,9 @@
     "copiedText": "복사됨",
     "copyFailed": "복사 실패 — 재시도",
     "dismissResult": "결과 닫기",
+    "copyError": "오류 복사",
+    "dismissError": "오류 닫기",
+    "errorDetailsUnavailable": "추가 정보가 없습니다. 공급자 설정을 확인하고 다시 시도하세요.",
     "microphoneLevel": "마이크 입력 레벨",
     "microphoneLevelValue": "입력 레벨: {{level}}%",
     "cancelRecording": "녹음 취소",
@@ -827,6 +830,23 @@
     "reload": "새로고침"
   },
   "updates": {
+    "title": "앱 업데이트",
+    "automatic": "자동 업데이트",
+    "policy": "시작 시 및 4시간마다 확인하고 다운로드와 검증을 수행합니다. 업데이트를 위해 다시 시작을 선택할 때만 설치하며 녹음을 중단하지 않습니다.",
+    "development": "개발 빌드에서는 업데이트가 비활성화됩니다.",
+    "busy": "녹음 또는 처리가 끝난 후 다시 시작하세요.",
+    "restart": "업데이트를 위해 다시 시작",
+    "checkNow": "지금 확인",
+    "viewRelease": "릴리스 보기",
+    "status": {
+      "idle": "최신 릴리스를 확인하세요.",
+      "checking": "업데이트 확인 중…",
+      "upToDate": "최신 버전입니다.",
+      "downloading": "{{version}} 다운로드 및 검증 중 — {{percent}}%",
+      "ready": "버전 {{version}}을 설치할 준비가 되었습니다.",
+      "installing": "설치 및 다시 시작 중…",
+      "error": "업데이트에 실패했습니다. 연결을 확인하고 다시 시도하거나 릴리스 페이지에서 다운로드하세요."
+    },
     "availableTitle": "업데이트 사용 가능",
     "availableBody": "버전 {{version}}을 설치할 수 있습니다.",
     "install": "업데이트 설치",

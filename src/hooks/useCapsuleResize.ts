@@ -143,8 +143,8 @@ function getSizeForState(
   translationTargetMenuOpen = false,
 ): CapsuleSize {
   if (translationTargetMenuOpen) return { width: 360, height: 180 }
-  if (contextMenuOpen) return { width: 220, height: 220 }
-  if (hasError) return { width: 200, height: 36 }
+  if (contextMenuOpen) return { width: hasError ? 360 : 220, height: 220 }
+  if (hasError) return { width: 360, height: 180 }
   if (expanded) return { width: 220, height: 90 }
   switch (state) {
     case 'idle':

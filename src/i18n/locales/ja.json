@@ -236,6 +236,9 @@
     "copiedText": "コピー済み",
     "copyFailed": "コピー失敗・再試行",
     "dismissResult": "結果を閉じる",
+    "copyError": "エラーをコピー",
+    "dismissError": "エラーを閉じる",
+    "errorDetailsUnavailable": "詳細情報はありません。プロバイダーの設定を確認して再試行してください。",
     "microphoneLevel": "マイク入力レベル",
     "microphoneLevelValue": "入力レベル：{{level}}%",
     "cancelRecording": "録音をキャンセル",
@@ -828,6 +831,23 @@
     "reload": "再読み込み"
   },
   "updates": {
+    "title": "アプリの更新",
+    "automatic": "自動更新",
+    "policy": "起動時と4時間ごとに確認し、ダウンロードと検証を行います。「再起動して更新」を選んだときだけインストールし、録音は中断しません。",
+    "development": "開発ビルドでは更新が無効です。",
+    "busy": "録音または処理が完了してから再起動してください。",
+    "restart": "再起動して更新",
+    "checkNow": "今すぐ確認",
+    "viewRelease": "リリースを見る",
+    "status": {
+      "idle": "最新リリースを確認します。",
+      "checking": "更新を確認中…",
+      "upToDate": "最新バージョンです。",
+      "downloading": "{{version}} をダウンロード・検証中 — {{percent}}%",
+      "ready": "バージョン {{version}} をインストールできます。",
+      "installing": "インストールして再起動中…",
+      "error": "更新に失敗しました。接続を確認して再試行するか、リリースページからダウンロードしてください。"
+    },
     "availableTitle": "アップデートがあります",
     "availableBody": "バージョン {{version}} をインストールできます。",
     "install": "アップデートをインストール",

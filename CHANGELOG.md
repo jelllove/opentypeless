@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-11-12
+
+### Added
+- Automatic startup/four-hour update checks, signature-verified background downloads, progress and an explicit restart-to-install action guarded against active dictation and Ask.
+- About controls for manual checks, immediately saved local automatic-update preference, retry and release-page fallback.
+- Fork-owned updater signing key and Windows x64 stable-tag release workflow producing installer, detached signature, latest.json and checksums. Existing 1.3.0 clients need one manual upgrade; Authenticode signing is separate.
+- Persistent copy/dismiss error panel with sanitized Azure Speech HTTP/service diagnostics, request ID, attempts and timing.
+
 ## [1.3.0] - 2026-11-07
 
 ### Added

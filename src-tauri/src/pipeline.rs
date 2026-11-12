@@ -1136,16 +1136,17 @@ impl PipelineHandle {
 
         // Atomic CAS: only one caller can transition Idle → Preparing. Recording is emitted only
         // after audio capture is ready, so the capsule does not tell users to speak too early.
-        if self
-            .state
-            .compare_exchange(
-                PipelineState::Idle.as_u8(),
-                PipelineState::Preparing.as_u8(),
-                Ordering::SeqCst,
-                Ordering::SeqCst,
-            )
-            .is_err()
-        {
+        let reserved = crate::updates::INSTALL_GATE.while_not_installing(|| {
+            self.state
+                .compare_exchange(
+                    PipelineState::Idle.as_u8(),
+                    PipelineState::Preparing.as_u8(),
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                )
+                .is_ok()
+        });
+        if reserved != Some(true) {
             return Ok(());
         }
         self.set_state(PipelineState::Preparing);

@@ -236,6 +236,9 @@
     "copiedText": "Copiato",
     "copyFailed": "Copia non riuscita — riprova",
     "dismissResult": "Chiudi risultato",
+    "copyError": "Copia errore",
+    "dismissError": "Chiudi errore",
+    "errorDetailsUnavailable": "Nessun altro dettaglio. Controlla le impostazioni del fornitore e riprova.",
     "microphoneLevel": "Livello del microfono",
     "microphoneLevelValue": "Livello di ingresso: {{level}}%",
     "cancelRecording": "Annulla registrazione",
@@ -827,6 +830,23 @@
     "reload": "Ricarica"
   },
   "updates": {
+    "title": "Aggiornamenti dell’applicazione",
+    "automatic": "Aggiornamenti automatici",
+    "policy": "Controlla all’avvio e ogni quattro ore; scarica e verifica. Installa solo scegliendo Riavvia per aggiornare, senza interrompere le registrazioni.",
+    "development": "Aggiornamenti disabilitati nelle versioni di sviluppo.",
+    "busy": "Termina la registrazione o l’elaborazione prima di riavviare.",
+    "restart": "Riavvia per aggiornare",
+    "checkNow": "Controlla ora",
+    "viewRelease": "Visualizza versione",
+    "status": {
+      "idle": "Cerca l’ultima versione.",
+      "checking": "Ricerca aggiornamenti…",
+      "upToDate": "La versione è aggiornata.",
+      "downloading": "Download e verifica di {{version}} — {{percent}}%",
+      "ready": "La versione {{version}} è pronta per l’installazione.",
+      "installing": "Installazione e riavvio…",
+      "error": "Aggiornamento non riuscito. Controlla la connessione, riprova o scarica dalla pagina delle versioni."
+    },
     "availableTitle": "Aggiornamento disponibile",
     "availableBody": "La versione {{version}} è pronta per l'installazione.",
     "install": "Installa aggiornamento",

@@ -158,6 +158,8 @@ impl SttProvider for AzureSpeechProvider {
         let pcm = std::mem::take(&mut self.audio);
         let wav = WhisperCompatProvider::build_wav(&pcm, config.sample_rate);
         let definition = definition(config.language.as_deref())?.to_string();
+        let started = std::time::Instant::now();
+        let audio_ms = pcm.len() as u64 * 1000 / (u64::from(config.sample_rate) * 2);
         for attempt in 0..=MAX_RETRIES {
             let result = upload_once(
                 &self.client,
@@ -175,6 +177,17 @@ impl SttProvider for AzureSpeechProvider {
                         MAX_RETRIES
                     );
                     tokio::time::sleep(Duration::from_secs(u64::from(attempt + 1))).await;
+                }
+                Err(AppError::AzureSpeechApi { status, details }) => {
+                    return Err(AppError::AzureSpeechApi {
+                        status,
+                        details: format!(
+                            "{details}\nAudio: {:.1}s; attempts: {}; elapsed: {:.1}s",
+                            audio_ms as f64 / 1000.0,
+                            attempt + 1,
+                            started.elapsed().as_secs_f64(),
+                        ),
+                    });
                 }
                 result => return result,
             }
@@ -197,6 +210,52 @@ fn upload_error(error: reqwest::Error) -> AppError {
     } else {
         error.into()
     }
+}
+
+// Only expose documented error fields, not arbitrary bodies, headers or URLs.
+fn service_error_details(status: u16, body: &str, key: &str, request_id: Option<&str>) -> String {
+    fn safe_text(value: &str, key: &str, limit: usize) -> String {
+        let redacted = if key.is_empty() {
+            value.to_string()
+        } else {
+            value.replace(key, "[redacted]")
+        };
+        redacted
+            .split_whitespace()
+            .map(|word| {
+                if word.contains("://") || word.to_ascii_lowercase().starts_with("www.") {
+                    "[url omitted]"
+                } else {
+                    word
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" ")
+            .chars()
+            .filter(|c| !c.is_control())
+            .take(limit)
+            .collect()
+    }
+
+    let mut details = format!("Azure Speech — HTTP {status}");
+    if let Ok(value) = serde_json::from_str::<Value>(body) {
+        let error = value.get("error").unwrap_or(&value);
+        for field in ["code", "message"] {
+            if let Some(text) = error.get(field).and_then(Value::as_str) {
+                let text = safe_text(text, key, 360);
+                if !text.is_empty() {
+                    details.push_str(&format!("\n{field}: {text}"));
+                }
+            }
+        }
+    }
+    if let Some(id) = request_id {
+        let id = safe_text(id, key, 80);
+        if !id.is_empty() {
+            details.push_str(&format!("\nRequest ID: {id}"));
+        }
+    }
+    details
 }
 
 async fn upload_once(
@@ -223,14 +282,18 @@ async fn upload_once(
         .map_err(upload_error)?;
     let status = response.status();
     if !status.is_success() {
+        let request_id = ["apim-request-id", "x-ms-request-id"]
+            .iter()
+            .find_map(|name| response.headers().get(*name)?.to_str().ok())
+            .map(str::to_string);
         // Preserve a permanent HTTP status even if reading its error body fails.
         let body = response
             .text()
             .await
             .unwrap_or_else(|_| "Azure Speech error response body was unavailable".into());
-        return Err(AppError::Api {
+        return Err(AppError::AzureSpeechApi {
             status: status.as_u16(),
-            body: body.chars().take(300).collect(),
+            details: service_error_details(status.as_u16(), &body, key, request_id.as_deref()),
         });
     }
     let body: Value = response.json().await.map_err(upload_error)?;
@@ -393,7 +456,11 @@ mod tests {
             if success {
                 assert_eq!(result.unwrap(), Some("Recovered text.".into()));
             } else {
-                assert!(result.is_err());
+                let error = result.unwrap_err();
+                if let AppError::AzureSpeechApi { details, .. } = error {
+                    assert!(details.contains(&format!("attempts: {expected_calls}")));
+                    assert!(details.contains("Audio: 0.1s"));
+                }
             }
             assert_eq!(worker.join().unwrap(), expected_calls);
         }
@@ -469,6 +536,49 @@ mod tests {
     }
 
     #[test]
+    fn azure_service_diagnostics_are_structured_bounded_and_redacted() {
+        let body = json!({"error": {
+            "code": "TooManyRequests",
+            "message": format!("Limit reached test-key https://host/?secret=hidden {}", "中".repeat(500)),
+            "audio": "private audio content"
+        }}).to_string();
+        let details = service_error_details(429, &body, "test-key", Some("request-123"));
+        assert!(details.contains("HTTP 429"));
+        assert!(details.contains("TooManyRequests"));
+        assert!(details.contains("[redacted]"));
+        assert!(details.contains("Request ID: request-123"));
+        assert!(!details.contains("test-key"));
+        assert!(!details.contains("secret=hidden"));
+        assert!(!details.contains("private audio"));
+        assert!(details.chars().count() < 500);
+        assert_eq!(
+            service_error_details(502, "<html>private proxy response</html>", "key", None),
+            "Azure Speech — HTTP 502"
+        );
+    }
+
+    #[test]
+    fn azure_http_diagnostics_preserve_status_mapping_and_retry_policy() {
+        for status in [400, 401, 403, 429, 500, 503] {
+            let error = AppError::AzureSpeechApi {
+                status,
+                details: format!("Azure Speech — HTTP {status}"),
+            };
+            assert_eq!(error.is_retryable(), status >= 500);
+            let user = error.to_user_error();
+            assert_eq!(
+                user.code,
+                if status == 401 || status == 403 {
+                    "stt_invalid_key"
+                } else {
+                    "stt_failed"
+                }
+            );
+            assert!(user.details.unwrap().contains(&status.to_string()));
+        }
+    }
+
+    #[test]
     fn azure_finalization_covers_all_attempts_and_backoff() {
         assert!(FINALIZE_TIMEOUT >= REQUEST_TIMEOUT * 3 + Duration::from_secs(3));
     }
@@ -523,7 +633,7 @@ mod tests {
                 assert!(request.contains("RIFF"));
                 assert!(request.contains("name=\"definition\""));
                 assert!(request.contains("zh-CN"));
-                write!(socket, "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
+                write!(socket, "HTTP/1.1 {status}\r\nContent-Type: application/json\r\napim-request-id: fixture-request\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len()).unwrap();
             });
             let mut provider = AzureSpeechProvider::with_client(
                 reqwest::Client::builder().no_proxy().build().unwrap(),
@@ -542,7 +652,16 @@ mod tests {
             if status.starts_with("200") {
                 assert_eq!(result.unwrap(), Some("Hello, world.".into()));
             } else {
-                assert!(matches!(result, Err(AppError::Api { status: 401, .. })));
+                let error = result.unwrap_err();
+                assert!(matches!(
+                    error,
+                    AppError::AzureSpeechApi { status: 401, .. }
+                ));
+                let details = error.to_user_error().details.unwrap();
+                assert!(details.contains("HTTP 401"));
+                assert!(details.contains("Invalid subscription key"));
+                assert!(details.contains("Request ID: fixture-request"));
+                assert!(details.contains("attempts: 1"));
             }
             worker.join().unwrap();
         }
