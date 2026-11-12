@@ -138,8 +138,8 @@ A local build without the key can override `bundle.createUpdaterArtifacts` to `f
 
 ```powershell
 npm run tauri -- build --target x86_64-pc-windows-msvc --bundles nsis --no-sign --ci -- --locked
-npm run tauri -- signer sign src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/OpenTypeless_1.4.0_x64-setup.exe
-node scripts/build-update-manifest.mjs src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis 1.4.0
+npm run tauri -- signer sign src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/OpenTypeless_1.4.1_x64-setup.exe
+node scripts/build-update-manifest.mjs src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis 1.4.1
 ```
 
 The manifest generator cryptographically verifies the final installer and trusted signature comment against the embedded fork public key before writing metadata and checksums. `latest.json` points only to this fork's versioned GitHub installer URL; it is not uploaded by a local build. Authenticode NotSigned and a valid independent updater payload signature can coexist. Never bypass signature verification or fall back to executing an unverified download.
@@ -148,7 +148,7 @@ The manifest generator cryptographically verifies the final installer and truste
 
 Release builds check the fork feed on startup and every four hours when enabled. About → Application updates provides manual check, progress, release-page fallback and an immediately saved auto-update switch in `update-settings.json`. A download already in flight may finish after automation is disabled. A ready update installs only through **Restart to update**, never on quit. The native gate rejects active dictation/Ask and blocks new hotkey starts during installation. NSIS uses passive progress and relaunches the installed application.
 
-The verified local v1.4.0 installer is `output/OpenTypeless_1.4.0_x64-setup.exe`, with detached `.exe.sig`, `latest.json` and `SHA256SUMS.txt` alongside it. It contains both the updater and STT diagnostics. Public v1.3.0 has no update manifest and cannot adopt the fork signing key automatically; install v1.4.0 manually once. Future signed releases expose the feed through this fork's latest release. Local fixtures alone cannot demonstrate live automatic delivery. Test fixtures cover valid/tampered signatures over loopback HTTP; production keeps HTTPS and signature verification enabled. Fixture success does not prove installation, public GitHub availability, or a full old-to-new upgrade. Exiting before installation drops the in-memory download; a later run may download it again.
+The verified local v1.4.0 installer is `output/OpenTypeless_1.4.0_x64-setup.exe`, with detached `.exe.sig`, `latest.json` and `SHA256SUMS.txt` alongside it. It contains both the updater and STT diagnostics. Public v1.3.0 has no update manifest and cannot adopt the fork signing key automatically; install v1.4.1 manually once. Future signed releases expose the feed through this fork's latest release. Local fixtures alone cannot demonstrate live automatic delivery. Test fixtures cover valid/tampered signatures over loopback HTTP; production keeps HTTPS and signature verification enabled. Fixture success does not prove installation, public GitHub availability, or a full old-to-new upgrade. Exiting before installation drops the in-memory download; a later run may download it again.
 
 ### Verification
 
