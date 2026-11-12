@@ -69,7 +69,7 @@ To regenerate the pack, download data/licensing files at the revisions in `resou
 node scripts/build-bundled-dictionary.mjs <jieba-staging-dir> <acronyms-staging-dir> src-tauri/resources/dictionary
 ```
 
-The generator only reads data; do not execute scripts or interpreters from downloaded directories. Commit generated vocabulary and its license/source metadata together. The generated `starter-terms.txt` is excluded from prose typo checks because acronyms such as DaaS, MIS and RTO are intentional spellings; do not autocorrect this source-derived data. Do not ship the upstream source trees. LLM cleanup selects at most 64 relevant spellings, so the whole dictionary does not increase every request's prompt.
+The generator only reads data; do not execute scripts or interpreters from downloaded directories. Commit generated vocabulary and its license/source metadata together. The generated `starter-terms.txt` is excluded from prose typo checks because its source-derived acronyms are intentional spellings; do not autocorrect this source-derived data. Do not ship the upstream source trees. LLM cleanup selects at most 64 relevant spellings, so the whole dictionary does not increase every request's prompt.
 
 Recording sounds default on and can be disabled in General. Verify start and stop with both toggle and hold modes. The start cue is played with capture callbacks gated, followed by a 35 ms tail guard; the stop cue is played after capture closes. A muted/unavailable output device may make cues inaudible but must not fail input capture. Use headphones to minimize room reverberation. Cue waveform/gating tests do not prove physical speaker audibility. Other platforms' sound playback remains best effort; the current installer is Windows x64.
 
