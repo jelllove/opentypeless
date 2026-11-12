@@ -12,6 +12,10 @@ describe('release version wiring', () => {
     expect(constantsSource).toContain('import.meta.env.VITE_APP_VERSION')
   })
 
+  it('pins the Windows image used by the verified Visual Studio 2022 toolchain', () => {
+    expect(ciWorkflowSource).toContain('platform: windows-2022')
+  })
+
   it('builds and verifies Linux arm64 release artifacts on a native runner', () => {
     expect(ciWorkflowSource).toContain('platform: ubuntu-22.04-arm')
     expect(ciWorkflowSource).toContain('target: aarch64-unknown-linux-gnu')

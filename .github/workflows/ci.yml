@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: windows-latest
+          - platform: windows-2022
             platform_group: windows
             target: x86_64-pc-windows-msvc
           - platform: macos-latest

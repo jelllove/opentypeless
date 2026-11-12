@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [1.4.0] - 2026-11-12
+## [1.4.1] - 2026-11-12
+
+### Fixed
+- Non-Windows recording cue playback now passes CPAL 0.18.2 an owned stream configuration, fixing macOS/Linux compilation.
+- Updated Better Auth desktop client, Vite and Vitest security patches and pinned Zod 4.6.7. No high/critical npm audit findings remain; moderate development-tool minimatch findings are reported without forcing a breaking major override.
+- Pinned Windows CI/release jobs to the Visual Studio 2022 hosted image and added the high-severity npm audit gate to release builds.
+
+### Release notes
+- Supersedes the v1.4.0 tag, whose public release was paused after CI failures. Includes signed fork updates and STT diagnostics; the original tag is preserved.
+
+## [1.4.0] - 2026-11-12 (source tag only; not published)
 
 ### Added
 - Automatic startup/four-hour update checks, signature-verified background downloads, progress and an explicit restart-to-install action guarded against active dictation and Ask.

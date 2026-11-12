@@ -58,7 +58,7 @@ pub fn play(cue: RecordingCue) {
             let frames = (rate * 0.18) as usize;
             let mut index = 0usize;
             let stream = device.build_output_stream(
-                &config,
+                config,
                 move |data: &mut [f32], _| {
                     for frame in data.chunks_mut(channels) {
                         let value = if index < frames {
