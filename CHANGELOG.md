@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Non-Windows recording cue playback now passes CPAL 0.18.2 an owned stream configuration, fixing macOS/Linux compilation.
 - Updated Better Auth desktop client, Vite and Vitest security patches and pinned Zod 4.6.7. No high/critical npm audit findings remain; moderate development-tool minimatch findings are reported without forcing a breaking major override.
 - Pinned Windows CI/release jobs to the Visual Studio 2022 hosted image and added the high-severity npm audit gate to release builds.
+- Updated bundled SQLite and compatible Rust TLS/certificate dependencies. Disabled the unused updater ZIP extraction feature while retaining signature-verified raw NSIS installation. The SQLite upgrade raises the Rust minimum to 1.89.
 
 ### Release notes
 - Supersedes the v1.4.0 tag, whose public release was paused after CI failures. Includes signed fork updates and STT diagnostics; the original tag is preserved.

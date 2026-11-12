@@ -54,6 +54,8 @@ jobs:
       - run: cargo fmt --check --manifest-path src-tauri/Cargo.toml
       - run: cargo clippy --manifest-path src-tauri/Cargo.toml --release --target x86_64-pc-windows-msvc --locked --lib -- -D warnings
       - run: cargo test --manifest-path src-tauri/Cargo.toml --release --target x86_64-pc-windows-msvc --locked --lib
+      - run: cargo install cargo-audit --locked
+      - run: cargo audit --file src-tauri/Cargo.lock --ignore RUSTSEC-2026-0194 --ignore RUSTSEC-2026-0195
       - name: Build signed updater payload (no Authenticode certificate)
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

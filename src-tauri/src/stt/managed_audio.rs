@@ -151,7 +151,7 @@ impl ManagedAudioEncoderWorker {
     }
 
     pub fn try_send_pcm(&self, pcm: &[u8]) -> Result<(), ManagedAudioError> {
-        if pcm.len() % 2 != 0 {
+        if !pcm.len().is_multiple_of(2) {
             return Err(ManagedAudioError::new(
                 "managed_audio_invalid_pcm",
                 "managed PCM input must contain aligned 16-bit samples",
@@ -337,13 +337,13 @@ impl OggOpusEncoder {
     }
 
     fn feed_pcm_bytes(&mut self, pcm: &[u8]) -> Result<(), ManagedAudioError> {
-        if pcm.len() % 2 != 0 {
+        if !pcm.len().is_multiple_of(2) {
             return Err(ManagedAudioError::new(
                 "managed_audio_invalid_pcm",
                 "managed PCM input must contain aligned 16-bit samples",
             ));
         }
-        for bytes in pcm.chunks_exact(2) {
+        for bytes in pcm.as_chunks::<2>().0 {
             if self.pending_samples.is_empty()
                 && u64::from(self.packet_count) >= self.max_audio_frames
             {

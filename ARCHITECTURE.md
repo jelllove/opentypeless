@@ -57,6 +57,8 @@ A single main-window update store coordinates About and the update notification.
 
 Restart/install is explicit. A short native mutex gate serializes voice-start reservations against entering installation and checks real dictation/Ask activity, protecting against stale frontend state. Windows Tauri updater launches the passive NSIS installer and exits; NSIS restarts the app. Failure releases the gate. There is no forced restart or automatic install on quit.
 
+The updater's optional ZIP extraction feature is disabled: this fork serves signed raw NSIS EXEs, so archive extraction adds no capability and would include an unused vulnerable ZIP dependency. Native TLS/signature verification and NSIS installation remain enabled. Bundled SQLite is upgraded through rusqlite 0.41.x, requiring Rust 1.89+ while preserving existing SQLite data and application queries.
+
 The fork-only stable-tag workflow builds/test-checks Windows x64, signs the updater payload with repository Actions Secrets, and publishes installer, detached signature, latest.json and checksums together. Private signing material stays outside source and bundles. HTTPS plus the embedded public key is the install trust boundary; checksum files supplement integrity checks but are not a substitute for publisher verification. Local builds or fixture tests do not establish that a public release is available.
 
 ## Constraints

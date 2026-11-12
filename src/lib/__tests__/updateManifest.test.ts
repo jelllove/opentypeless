@@ -6,6 +6,8 @@ import signature from '../../../src-tauri/tests/fixtures/updater-payload.txt.sig
 import payload from '../../../src-tauri/tests/fixtures/updater-payload.txt?raw'
 import config from '../../../src-tauri/tauri.conf.json'
 import workflow from '../../../.github/workflows/release-fork.yml?raw'
+import cargoManifest from '../../../src-tauri/Cargo.toml?raw'
+import cargoLock from '../../../src-tauri/Cargo.lock?raw'
 
 describe('fork updater release contract', () => {
   it('verifies fork signatures and rejects tampered payloads and trusted comments', () => {
@@ -42,6 +44,14 @@ describe('fork updater release contract', () => {
     expect(() => updateManifest('1.4.0', '')).toThrow()
   })
 
+  it('keeps raw NSIS updates without compiling an unused ZIP extractor', () => {
+    expect(cargoManifest).toContain(
+      'tauri-plugin-updater = { version = "=2.10.1", default-features = false, features = ["rustls-tls"] }',
+    )
+    expect(cargoLock).not.toContain('name = "zip"')
+    expect(cargoLock).toContain('name = "libsqlite3-sys"\nversion = "0.39.1"')
+  })
+
   it('uses the fork feed and signs only in its dedicated release workflow', () => {
     expect(config.plugins.updater.endpoints).toEqual([
       'https://github.com/jelllove/opentypeless/releases/latest/download/latest.json',
@@ -51,6 +61,9 @@ describe('fork updater release contract', () => {
     expect(workflow).toContain('secrets.TAURI_SIGNING_PRIVATE_KEY')
     expect(workflow).toContain('runs-on: windows-2022')
     expect(workflow).toContain('npm audit --audit-level=high')
+    expect(workflow).toContain(
+      'cargo audit --file src-tauri/Cargo.lock --ignore RUSTSEC-2026-0194 --ignore RUSTSEC-2026-0195',
+    )
     expect(workflow).toContain('signer sign')
     expect(workflow).toContain('--verify-tag')
     expect(workflow).not.toContain('dangerousInsecureTransportProtocol')
