@@ -19,6 +19,8 @@ extend-exclude = [
   "node_modules/",
   "target/",
   "dist/",
+  # Generated licensed spelling/acronym data; do not autocorrect provider spellings.
+  "src-tauri/resources/dictionary/starter-terms.txt",
   "src/i18n/locales/*.json",
   "*.min.js",
   "*.min.css",
