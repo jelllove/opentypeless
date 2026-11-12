@@ -150,6 +150,12 @@ Release builds check the fork feed on startup and every four hours when enabled.
 
 The verified local v1.4.0 installer is `output/OpenTypeless_1.4.0_x64-setup.exe`, with detached `.exe.sig`, `latest.json` and `SHA256SUMS.txt` alongside it. It contains both the updater and STT diagnostics. Public v1.3.0 has no update manifest and cannot adopt the fork signing key automatically; install v1.4.1 manually once. Future signed releases expose the feed through this fork's latest release. Local fixtures alone cannot demonstrate live automatic delivery. Test fixtures cover valid/tampered signatures over loopback HTTP; production keeps HTTPS and signature verification enabled. Fixture success does not prove installation, public GitHub availability, or a full old-to-new upgrade. Exiting before installation drops the in-memory download; a later run may download it again.
 
+### Published v1.4.1 verification
+
+On 2026-11-12, [main CI](https://github.com/jelllove/opentypeless/actions/runs/43203499672) passed frontend, audit, Windows, macOS and Linux x64/ARM64 checks for source `a76a314b8b3e4a805c4e080b13b7a9bbde606895`. [Fork release CI](https://github.com/jelllove/opentypeless/actions/runs/43204650217) published the stable [v1.4.1 release](https://github.com/jelllove/opentypeless/releases/tag/v1.4.1).
+
+All four assets were downloaded after publication and verified: installer, detached updater signature, `latest.json` and `SHA256SUMS.txt`. The public latest-feed URL matches the versioned manifest exactly. The installer is 5,074,939 bytes; SHA-256 is `6b76307ffee6c307331124c59398c6574c49a060b7a73727593d9349ed8c1e77`. Updater signature verification succeeded against the embedded fork key; Authenticode remains NotSigned. This verifies public delivery/integrity, not an installed old-to-new upgrade or live Azure/microphone behavior.
+
 ### Verification
 
 ```powershell
