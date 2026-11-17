@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import ciWorkflowSource from '../../../.github/workflows/ci.yml?raw'
+import codeqlWorkflowSource from '../../../.github/workflows/codeql.yml?raw'
+import typosWorkflowSource from '../../../.github/workflows/typos.yml?raw'
 import appImageVerificationScriptSource from '../../../.github/scripts/verify-appimage-runtime-libraries.sh?raw'
 import appImagePluginWrapperSource from '../../../.github/scripts/linuxdeploy-plugin-appimage-exclude-wrapper.sh?raw'
 import linuxdeployPrepareScriptSource from '../../../.github/scripts/prepare-linuxdeploy-wrapper.sh?raw'
@@ -8,6 +10,12 @@ import constantsSource from '../constants.ts?raw'
 import linuxVerificationScriptSource from '../../../.github/scripts/upload-linux-verification-artifacts.sh?raw'
 
 describe('release version wiring', () => {
+  it('allows exact-ref verification when a GitHub push event is not delivered', () => {
+    for (const workflow of [ciWorkflowSource, codeqlWorkflowSource, typosWorkflowSource]) {
+      expect(workflow).toContain('  workflow_dispatch:')
+    }
+  })
+
   it('lets frontend builds read the release tag version from Vite env', () => {
     expect(constantsSource).toContain('import.meta.env.VITE_APP_VERSION')
   })

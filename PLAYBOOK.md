@@ -162,6 +162,10 @@ On 2026-11-12, [main CI](https://github.com/jelllove/opentypeless/actions/runs/4
 
 All four assets were downloaded after publication and verified: installer, detached updater signature, `latest.json` and `SHA256SUMS.txt`. The public latest-feed URL matches the versioned manifest exactly. The installer is 5,074,939 bytes; SHA-256 is `6b76307ffee6c307331124c59398c6574c49a060b7a73727593d9349ed8c1e77`. Updater signature verification succeeded against the embedded fork key; Authenticode remains NotSigned. This verifies public delivery/integrity, not an installed old-to-new upgrade or live Azure/microphone behavior.
 
+### Recovering missing GitHub check triggers
+
+If a pushed main commit has no registered CI/CodeQL/Typos runs, verify the remote SHA and Actions/workflow status first. All three verification workflows support manual dispatch: run `gh workflow run <ci.yml|codeql.yml|typos.yml> --ref main --repo jelllove/opentypeless`, then require successful runs whose `headSha` matches the release source. This reruns the same checks; do not force-push or tag a release based only on older checks.
+
 ### Verification
 
 ```powershell
