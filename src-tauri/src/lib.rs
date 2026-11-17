@@ -1,6 +1,7 @@
 pub mod app_detector;
 pub mod audio;
 pub mod bundled_dictionary;
+pub mod capsule;
 pub mod cloud_request;
 pub mod commands;
 pub mod credentials;
@@ -958,6 +959,7 @@ pub fn run() {
             app.manage(context_detector);
             app.manage(pipeline_handle);
             app.manage(commands::ask::AskDictationState::default());
+            capsule::install(&app_handle, initial_config.capsule_auto_hide);
             app.manage(HotkeyModeCache(Arc::new(Mutex::new(
                 initial_config.hotkey_mode.clone(),
             ))));
@@ -1173,6 +1175,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             start_recording,
+            capsule::capsule_sync,
+            capsule::capsule_set_visible,
             updates::begin_update_install,
             updates::cancel_update_install,
             updates::finish_update_install,

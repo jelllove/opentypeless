@@ -311,6 +311,7 @@ pub enum PendingAskMessage {
 }
 
 fn emit_capsule_state(app: &tauri::AppHandle, state: PipelineState) {
+    crate::capsule::set_state(app, state);
     let _ = app.emit("pipeline:state", state);
 }
 

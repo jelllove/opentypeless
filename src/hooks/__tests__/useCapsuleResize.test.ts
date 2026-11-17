@@ -12,6 +12,11 @@ import {
 } from '../useCapsuleResize'
 import { useAppStore } from '../../stores/appStore'
 
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: (_command: string, args: { visible: boolean }) =>
+    args.visible ? windowApiMocks.show() : windowApiMocks.hide(),
+}))
+
 const windowApiMocks = vi.hoisted(() => ({
   getCurrentWindow: vi.fn(),
   availableMonitors: vi.fn(),

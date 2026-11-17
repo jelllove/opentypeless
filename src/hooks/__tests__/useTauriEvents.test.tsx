@@ -49,8 +49,8 @@ vi.mock('../../stores/authStore', () => ({
   },
 }))
 
-function HookHarness() {
-  useTauriEvents()
+function HookHarness({ capsule = false }: { capsule?: boolean }) {
+  useTauriEvents(capsule)
   return null
 }
 
@@ -68,6 +68,22 @@ describe('useTauriEvents', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
+  })
+
+  it('uses revisioned presentation only in the capsule while retaining live microphone events', async () => {
+    render(<HookHarness capsule />)
+    await waitFor(() => expect(eventListeners.has('audio:volume')).toBe(true))
+    for (const event of [
+      'pipeline:state',
+      'pipeline:error',
+      'pipeline:completed',
+      'recording:deadline',
+      'pipeline:voice_mode',
+    ]) {
+      expect(eventListeners.has(event)).toBe(false)
+    }
+    act(() => eventListeners.get('audio:volume')?.({ payload: 0.6 }))
+    expect(useAppStore.getState().audioVolume).toBe(0.6)
   })
 
   it('clears stale microphone levels when starting Ask or leaving recording', async () => {

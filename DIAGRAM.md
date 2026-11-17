@@ -32,6 +32,24 @@ flowchart LR
 
 Other configured STT and LLM providers remain interchangeable. Azure Speech transcribes after stop rather than providing realtime partial text; the LLM can stream preview text through the existing pipeline. Responses target-app insertion waits for successful completion.
 
+## Capsule Recovery
+
+```mermaid
+flowchart LR
+    State[Native recording or Ask state] --> Cache[Revisioned in-memory snapshot]
+    Cache --> Show[Non-focusing native show]
+    Cache --> Event[Overlay state event]
+    Event --> UI[Capsule renderer]
+    UI --> Ack[Periodic applied-revision acknowledgement]
+    Ack --> Cache
+    UI -->|Load or resume| Replay[Request current snapshot]
+    Cache --> Replay
+    Cache --> Watch[Native visibility and acknowledgement watchdog]
+    Watch -->|Hidden or off-screen| Show
+    Watch -->|No acknowledgement for five seconds| Reload[Reload overlay once per recording]
+    Reload --> Replay
+```
+
 ## Fork Update Flow
 
 ```mermaid

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.2] - 2026-11-17
+
+### Fixed
+- Recording and Ask now wake the capsule through native window handling rather than relying solely on a hidden renderer receiving an event.
+- Revisioned overlay state replay restores recording deadlines, errors and copy-ready results after missed events or renderer reload; stale hide/dismiss requests cannot override newer active state.
+- An active overlay missing acknowledgements for five seconds receives one recovery reload per recording. Recovery does not restart capture, resend audio or take target-app focus; idle auto-hide remains unchanged.
+
 ## [1.4.1] - 2026-11-12
 
 ### Fixed

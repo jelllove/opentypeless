@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { useAppStore, type PipelineState } from '../stores/appStore'
 
 interface CapsuleSize {
@@ -281,11 +282,9 @@ export function useCapsuleResize() {
             }
 
             if (!isCurrent()) return
-            if (shouldShow) {
-              await win.show().catch(() => {})
-            } else {
-              await win.hide().catch(() => {})
-            }
+            await invoke('capsule_set_visible', { visible: shouldShow }).catch((error) => {
+              console.warn('Capsule visibility request failed:', error)
+            })
             if (!isCurrent()) return
 
             initialized.current = true
@@ -407,11 +406,9 @@ export function useCapsuleResize() {
           }
 
           if (!isCurrent()) return
-          if (shouldShow) {
-            await win.show().catch(() => {})
-          } else {
-            await win.hide().catch(() => {})
-          }
+          await invoke('capsule_set_visible', { visible: shouldShow }).catch((error) => {
+            console.warn('Capsule visibility request failed:', error)
+          })
           if (!isCurrent()) return
         },
       )

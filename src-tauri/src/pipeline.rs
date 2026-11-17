@@ -142,7 +142,7 @@ fn generate_cloud_operation_id() -> String {
     )
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PipelineState {
     Idle,
@@ -1009,6 +1009,7 @@ impl PipelineHandle {
                 Option::<crate::voice_intent::VoiceMode>::None,
             );
         }
+        crate::capsule::set_state(&self.app_handle, new_state);
         let _ = self.app_handle.emit("pipeline:state", new_state);
 
         // Update tray tooltip + menu to reflect pipeline state
@@ -1840,6 +1841,7 @@ impl PipelineHandle {
             return Ok(());
         }
         self.active_deadline_session_id.store(0, Ordering::SeqCst);
+        crate::capsule::set_state(&self.app_handle, PipelineState::Transcribing);
         let _ = self
             .app_handle
             .emit("pipeline:state", PipelineState::Transcribing);

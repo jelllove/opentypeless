@@ -46,6 +46,13 @@
   <strong>Dictate anywhere</strong> · <strong>Rewrite selected text</strong> · <strong>Ask one-shot voice questions</strong> · <strong>Bring your own keys or use managed cloud words</strong>
 </p>
 
+## What's New in This Fork (v1.4.2)
+
+- Native recording-capsule wake-up and state recovery prevent a hidden/stale overlay from silently missing recording transitions. Pending errors and results survive overlay recovery without restarting recording or taking input focus.
+- Includes the signed updater, STT diagnostics and dependency security fixes from v1.4.1.
+
+Download [v1.4.2](https://github.com/jelllove/opentypeless/releases/tag/v1.4.2).
+
 ## What's New in This Fork (v1.4.1)
 
 - Dependency security patches and macOS/Linux recording-cue compilation repair. v1.4.0's source tag is retained, but its release was not published.

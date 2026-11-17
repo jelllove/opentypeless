@@ -24,6 +24,14 @@ Responses sends `input`, `max_output_tokens`, and `store: false`. SSE parsing bu
 
 The capsule uses a smooth centered cubic curve with tapered ends rather than scrolling RMS history. Measured RMS drives amplitude through a noise gate and perceptual scaling; speech enables gentle phase motion and silence decays to a flat centerline. Reduced-motion preferences disable phase animation but not loudness feedback. Ask emits the same level event as dictation, guarded by its active recording session; state transitions reset stale levels.
 
+## Capsule Wake-up and Recovery
+
+The native overlay runtime owns a revisioned, in-memory presentation snapshot. Dictation and Ask update it and queue a non-focusing native show before emitting webview state events. Native UI-thread visibility decisions read the latest snapshot, so delayed idle hide requests cannot override an active recording. A one-second watchdog reveals a hidden/off-screen active capsule even if frontend JavaScript missed an event.
+
+The capsule registers a dedicated snapshot listener, then requests replay and acknowledges the applied revision periodically and on visibility/focus resume. Initial/late replies cannot overwrite a newer revision; dismissals only apply to the revision acknowledged by that renderer. Deadlines, final transcript, error and pending output survive overlay reload in process memory, never disk. High-frequency microphone/streaming preview events retain their existing path.
+
+If active UI state receives no acknowledgement for five seconds, the watchdog reloads only the capsule once per recording. Recording/provider tasks continue unchanged; recovery never sends audio again or focuses another app. Idle auto-hide stays user-controlled. Window-operation failures are logged rather than silently swallowed. This closes event-loss/hidden-renderer gaps; it does not prove which Windows suspension scenario caused a particular historical report.
+
 ## Copy-ready Completion
 
 The backend emits final text and output status separately from its idle transition. A transient pending result keeps the capsule visible without keeping the recording pipeline busy. Fallbacks are persistent until dismissed or replaced; successful insertion provides an eight-second copy action. Clipboard writes use the existing native plugin and are retryable.

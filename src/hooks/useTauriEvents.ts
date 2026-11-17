@@ -24,6 +24,15 @@ import {
 
 type Unlisten = () => void | Promise<void>
 
+// Overlay presentation comes only from revisioned replay, never unordered duplicate events.
+const replayedCapsuleEvents = new Set([
+  'pipeline:state',
+  'recording:deadline',
+  'pipeline:voice_mode',
+  'pipeline:completed',
+  'pipeline:error',
+])
+
 interface RecordingDeadlineNotice {
   sessionId: number
   recordingKind: 'dictation' | 'ask'
@@ -49,7 +58,7 @@ function safeUnlisten(unlisten: Unlisten) {
   }
 }
 
-export function useTauriEvents() {
+export function useTauriEvents(capsule = false) {
   const { t } = useTranslation()
   const {
     setAudioVolume,
@@ -75,6 +84,7 @@ export function useTauriEvents() {
     const unlisteners: Unlisten[] = []
 
     function addListener<T>(event: string, handler: (payload: T) => void) {
+      if (capsule && replayedCapsuleEvents.has(event)) return
       listen<T>(event, (e) => handler(e.payload))
         .then((unlisten) => {
           if (cancelled) {
@@ -215,6 +225,7 @@ export function useTauriEvents() {
       unlisteners.forEach(safeUnlisten)
     }
   }, [
+    capsule,
     setAudioVolume,
     setPartialTranscript,
     setFinalTranscript,

@@ -53,6 +53,12 @@ While recording, silence should settle to a flat centerline; speaking should pro
 
 If it stays flat while speaking, verify Windows microphone permission, that the default recording device receives input, and that the microphone is not muted. A visible recording capsule alone does not establish microphone input. Test with a short phrase and inspect the transcript as well; provider errors are separate from local audio levels.
 
+### Capsule wake-up and long-running recovery
+
+v1.4.2 adds native show/replay fallback for the symptom “opening chime but no recording UI.” With idle auto-hide enabled, leave the app in the tray, resume Windows from sleep or change monitors, then press/release Right Alt once. The capsule must appear without taking focus; the next press/release stops recording (toggle mode). Missing events are resynchronized after listener registration, on visibility resume and every second. If an active overlay fails to acknowledge for five seconds, only that overlay reloads once per recording; capture and provider work are not restarted.
+
+Verify both dictation and Ask, pending error/result replay, manual dismissal, eight-second successful-output expiry, and auto-hide after completion. Native state must reject stale hide/dismiss requests. Window failures and bounded renderer reloads appear in console tracing. Automated tests cover replay ordering and recovery policy, not days-long physical microphone/keyboard/sleep behavior. Do not claim a historical renderer failure was reproduced solely because fixtures pass.
+
 ### Copy-ready result verification
 
 Record with focus on the desktop, a read-only control, or another known non-input target. Stop recording: the final result should remain as **Copy text**, even with capsule auto-hide enabled. Click to copy, verify paste into a separate input, and use the close button to dismiss. Clipboard failure should retain the result and show a retry action. Starting another recording replaces the old pending result.
