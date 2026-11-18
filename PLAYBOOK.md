@@ -164,7 +164,9 @@ All four assets were downloaded after publication and verified: installer, detac
 
 ### v1.4.2 operator-approved local release
 
-GitHub rejected both push-triggered and manual Actions execution for this repository with HTTP 422, despite reporting the workflows enabled. On 2026-11-18 the owner explicitly authorized publishing v1.4.2 from the locally verified Windows x64 build without current remote CI. This exception does not change the normal release workflow or signature checks. Release notes must disclose the missing current cross-platform CI/CodeQL result and any unavailable local audit, retain the exact source SHA, and include the detached updater signature and checksums. Build serially with one Cargo job; do not install or activate recording as part of packaging.
+GitHub rejected both push-triggered and manual Actions execution for this repository with HTTP 422, despite reporting the workflows enabled. On 2026-11-18 the owner explicitly authorized publishing v1.4.2 from the locally verified Windows x64 build without current remote CI. This exception does not change the normal release workflow or signature checks. Release notes must disclose the missing current cross-platform CI/CodeQL result, retain the exact source SHA, and include the detached updater signature and checksums. Build serially with one Cargo job; do not install or activate recording as part of packaging.
+
+The current npm audit returned seven high and nine moderate dependency-tree findings, including the newly reported `picomatch` advisory GHSA-fc5q-39xc-vjpf (affected through 4.0.7; the registry offers no newer 4.x patch). The affected paths are Vite/Vitest/glob build tooling; npm also reaches Vitest through Better Auth's peer relationship. The desktop installer packages compiled static frontend assets and the Rust application, not a Node/Vite server or node_modules. This is not a clean npm audit: retain the findings in release notes, do not claim remote audit success, do not process untrusted glob inputs with these tools, and do not force the audit's suggested unrelated major downgrades.
 
 ### Recovering missing GitHub check triggers
 
