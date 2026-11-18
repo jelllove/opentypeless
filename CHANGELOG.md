@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [1.4.2] - 2026-11-17
+## [1.4.2] - 2026-11-18
 
 ### Fixed
 - Recording and Ask now wake the capsule through native window handling rather than relying solely on a hidden renderer receiving an event.
