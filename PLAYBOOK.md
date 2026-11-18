@@ -168,6 +168,12 @@ GitHub rejected both push-triggered and manual Actions execution for this reposi
 
 The current npm audit returned seven high and nine moderate dependency-tree findings, including the newly reported `picomatch` advisory GHSA-fc5q-39xc-vjpf (affected through 4.0.7; the registry offers no newer 4.x patch). The affected paths are Vite/Vitest/glob build tooling; npm also reaches Vitest through Better Auth's peer relationship. The desktop installer packages compiled static frontend assets and the Rust application, not a Node/Vite server or node_modules. This is not a clean npm audit: retain the findings in release notes, do not claim remote audit success, do not process untrusted glob inputs with these tools, and do not force the audit's suggested unrelated major downgrades.
 
+### Published v1.4.2 verification
+
+The owner-approved local [v1.4.2 release](https://github.com/jelllove/opentypeless/releases/tag/v1.4.2) was published on 2026-11-18 from source `7de323dd31f2892fdd7f9687b834d5d45559db40`. Fresh serial local checks passed: frontend build/lint/format, 541 frontend tests, native format/Clippy and 647 Rust tests. Current remote CI/CodeQL was unavailable; npm audit findings and 17 nonblocking Rust audit warnings are disclosed in the release notes.
+
+All four published assets were downloaded through their public HTTPS URLs. Installer signature/checksums verified against the fork key, and the public latest-feed URL matched the versioned manifest. The installer is 5,087,525 bytes; SHA-256 is `1eef383e8b27c1490d29aad09d59d25f7df33c9acbe913234efae82e3f804805`. The application is AMD64 v1.4.2, with no Authenticode signature. No application installation, physical capture/sleep reproduction or live Azure request was performed.
+
 ### Recovering missing GitHub check triggers
 
 If a pushed main commit has no registered CI/CodeQL/Typos runs, verify the remote SHA and Actions/workflow status first. All three verification workflows support manual dispatch: run `gh workflow run <ci.yml|codeql.yml|typos.yml> --ref main --repo jelllove/opentypeless`, then require successful runs whose `headSha` matches the release source. This reruns the same checks; do not force-push or tag a release based only on older checks.
